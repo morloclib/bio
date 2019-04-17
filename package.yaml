@@ -1,0 +1,11 @@
+name: bio 
+version: 0.0.0
+homepage: https://github.com/morloc-project/
+synopsis: Core functions and types for computational biology
+description: Lots of detail about all this
+category: science
+license: MIT
+author: "Zebulun Arendsee"
+maintainer: "zbwrnz@gmail.com"
+github: https://github.com/morloclib/bio
+bug-reports: https://github.com/morloclib/bio

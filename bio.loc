@@ -1,1 +1,48 @@
-composition :: String -> Table { Character :: String, Count :: Integer }
+Count :: i:Integer where (i > 0)
+
+GeneID :: i:Integer where (i > 0)
+
+ProteinSeq :: (label:String, sequence:String)
+
+map_Integer_to_GeneID :: map => Integer -> ProteinSeq
+
+map_GeneID_to_ProteinSeq :: map => GeneID -> ProteinSeq
+
+map_ProteinSeq_to_String :: map => ProteinSeq -> String 
+
+composition :: String -> Table {
+    Character :: cs:[String]
+  , Count :: ns:[n:Integer]
+} where
+    (
+      length xs == length ns
+    , n >= 0
+    )
+
+# Here is a fundamental challenge to the concept of a universal type system.
+# There are many possible representations for every concept. They each have
+# different features, and can be optimized in different ways. I guess I need a
+# canonical form. Then a calculus for converting between isomorphic
+# representations.
+#
+# What is a canonical type?
+#
+# A table is a list of vectors of equal length, each vector is homogenous but
+# the different vectors may have different types.
+#
+# A table with a column of unique values, or where some combination of columns
+# are unique together, may be converted to a dictionary/hashmap.
+#
+#  composition :: String -> (x:[Character], n:[Integer]) where
+#  (   length x == length n
+#    , unique x
+#  )
+#
+# CompositionTable :: t:Table [cs:[Char], ns:[n:Integer]] where {
+#     distinct cs
+#   , n >= 0
+#   , has_row_names t
+#   , has_column_names t
+#   , ordered_rows t
+#   , ordered_cols t
+# }

@@ -1,6 +1,6 @@
 name: bio 
 version: 0.0.0
-homepage: https://github.com/morloc-project/
+homepage: https://github.com/morloclib/bio
 synopsis: Core functions and types for computational biology
 description: Lots of detail about all this
 category: science

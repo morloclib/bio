@@ -33,4 +33,7 @@ def map_ProteinSeq_to_String(proteinSeq):
 
 #  composition :: String -> Table { Character :: Char, Count :: Int }
 def composition(seq):
-   return(pd.Series(list(seq)).value_counts().to_frame())
+    df = pd.Series(list(seq)).value_counts().to_frame()
+    df.reset_index(inplace=True)
+    df.columns = ['character', 'count']
+    return(df)

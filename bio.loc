@@ -1,6 +1,8 @@
 import "pybase"
 
-source "python3" from "bio.py" (
+export composition
+
+source "py" from "bio.py" (
   # mappers
     "map_Integer_to_GeneID"
   , "map_GeneID_to_ProteinSeq"
@@ -9,21 +11,34 @@ source "python3" from "bio.py" (
   , "composition"
 )
 
-export composition
-
-GeneID :: i:Integer where (i > 0)
-ProteinSeq :: (label:String, sequence:String)
+GeneID :: i:Integer where (i > 0);
+ProteinSeq :: (label:String, sequence:String);
 
 # functions used in type conversions
-map_Integer_to_GeneID    :: map => Integer    -> ProteinSeq
-map_GeneID_to_ProteinSeq :: map => GeneID     -> ProteinSeq
-map_ProteinSeq_to_String :: map => ProteinSeq -> String
+map_Integer_to_GeneID    :: map => Integer    -> ProteinSeq;
+map_GeneID_to_ProteinSeq :: map => GeneID     -> ProteinSeq;
+map_ProteinSeq_to_String :: map => ProteinSeq -> String;
 
-composition :: String -> Table {
-    Character :: cs:[String]
-  , Count :: ns:[n:Integer]
-} where
-    (
-      length xs == length ns
-    , n >= 0
-    )
+# composition :: String -> Record {
+#     Character :: cs:[String]
+#   , Count :: ns:[n:Integer]
+# };
+# # SyntaxError:
+# #     TrivialError (
+# #         SourcePos {
+# #             sourceName = "/home/z/.morloc/lib/bio/bio.loc",
+# #             sourceLine = Pos 23,
+# #             sourceColumn = Pos 1
+# #         } :| []
+# #     )
+# #     (Just (Tokens ('c' :| "")))
+# #     (fromList [EndOfInput])
+
+# composition :: String -> {
+#     Character :: cs:[String]
+#   , Count :: ns:[n:Integer]
+# };
+# # Find the code monkeys 'cause you broke it good (TrulyWeird)
+
+composition :: String -> DataFrame;
+composition py :: String -> DataFrame;

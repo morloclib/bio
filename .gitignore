@@ -1,1 +1,6 @@
 __pycache__
+*.out
+*.o
+*.gch
+nexus.pl
+pool.*

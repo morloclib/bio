@@ -1,11 +1,11 @@
-module bio {
-
-import bio_pure
-import bio_io
+module bio_pure {
 
 export revcom
-export readFasta
-export writeFasta
+
+source Cpp from "bio_pure.hpp" ("revcom")
+
+revcom :: Str -> Str;
+revcom Cpp :: "std::string" -> "std::string";
 
 -- reverse_complement :: DNA -> DNA;
 -- translate :: DNA -> AA;

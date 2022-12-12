@@ -1,27 +1,25 @@
-module bio {
+module bio
 
-import bio_pure
-import bio_io
+import bio.pure
+import bio.io
 
 export revcom
 export readFasta
 export writeFasta
 
--- reverse_complement :: DNA -> DNA;
--- translate :: DNA -> AA;
+-- reverse_complement :: DNA -> DNA
+-- translate :: DNA -> AA
 -- trim_alignment :: Int -> Int -> [Str] -> [Str]
 -- ungap :: Str -> Str
 -- as_fasta :: Int -> [(Str, Str)] -> Str
 -- from_fasta :: Str -> [(Str, Str)]
 --
 -- -- Major algorithms
--- align :: [Str] -> [Str];
--- mask :: Str -> Str;
+-- align :: [Str] -> [Str]
+-- mask :: Str -> Str
 --
--- protein_structure :: opts -> AA -> ProteinStructure;
--- rna_structure :: opts -> RNA -> RnaStructure;
+-- protein_structure :: opts -> AA -> ProteinStructure
+-- rna_structure :: opts -> RNA -> RnaStructure
 --
 -- -- protein annotations
--- glycosylation_sites :: opts -> AA -> [Int];
-
-}
+-- glycosylation_sites :: opts -> AA -> [Int]

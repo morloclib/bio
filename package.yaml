@@ -2,7 +2,7 @@ name: bio
 version: 0.0.0
 homepage: https://github.com/morloclib/bio
 synopsis: Core functions and types for computational biology
-description: Lots of detail about all this
+description: Bioinformatics data structures and algorithms
 category: science
 license: MIT
 author: "Zebulun Arendsee"

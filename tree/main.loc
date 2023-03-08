@@ -1,37 +1,50 @@
-import bio.data (Tree)
-
-source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
+module bio.tree
 
 export Tree
+export randomTree
 
-treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
-
-pull :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
-
-mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
-
-nodes :: Tree n e l -> [n]
-edges :: Tree n e l -> [e]
-leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
-
-edgeMap :: Tree n e l -> Map Int (Int, e)
-
-root :: Tree n e l -> Int
-root = head . filter ne . enumerate . sort . fst . values . edgeMap
-
-filterNode :: (n -> Bool) -> Tree n e l -> Tree n e l
-filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
-filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
-
-mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
-mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
-mapLeaf :: (v -> v') -> Tree n e l -> Tree n e l'
+source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
+source R from "tree.R" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
 
 packTree :: pack => ([n], [(Int, Int, e)], [l]) -> Tree n e l 
 unpackTree :: unpack => Tree n e l -> ([n], [(Int, Int, e)], [l])
 
 packTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "Tree<$1,$2,$3>" n e l  
 unpackTree Cpp :: unpack => "Tree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
+
+-- A few tricky points, R is 1-based, but morloc is 0-based. This means that
+-- when packing and unpacking indices need to be tweacked. In fact, I should add
+-- a dedicated Index type.
+packTree R   :: pack   => ([n], [("integer", "integer", e)], [l]) -> "phylo" n e l
+unpackTree R :: unpack => "phylo" n e l -> ([n], [("integer", "integer", e)], [l])
+
+source R from "ape.R" ("randomTree")
+
+randomTree :: Int -> Tree Str Real Str
+randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
+
+-- treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
+--
+-- pull :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+--
+-- mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
+--
+-- nodes :: Tree n e l -> [n]
+-- edges :: Tree n e l -> [e]
+-- leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
+--
+-- edgeMap :: Tree n e l -> Map Int (Int, e)
+--
+-- root :: Tree n e l -> Int
+-- root = head . filter ne . enumerate . sort . fst . values . edgeMap
+--
+-- filterNode :: (n -> Bool) -> Tree n e l -> Tree n e l
+-- filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
+-- filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
+--
+-- mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
+-- mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
+-- mapLeaf :: (v -> v') -> Tree n e l -> Tree n e l'
 
 -- sort the edgelist by the first element
 -- iterate through using binary search to find children

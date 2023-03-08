@@ -1,0 +1,6 @@
+import cppbase (id)
+import bio.tree (Tree, randomTree)
+
+export foo
+foo Cpp :: "int" -> "Tree<$1,$2,$3>" "std::string" "double" "std::string"
+foo n = id (randomTree n)

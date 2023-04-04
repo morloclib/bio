@@ -1,11 +1,7 @@
-module bio
+module bio (*)
 
-import bio.pure
+-- import bio.pure
 import bio.io
-
-export revcom
-export readFasta
-export writeFasta
 
 -- reverseComplement :: DNA -> DNA
 -- translate :: DNA -> AA

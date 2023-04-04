@@ -1,39 +1,11 @@
-module bio.data
+module bio.data (*)
 
-
--- A simple phylogenetic tree where leafs have names, edges have lengths, and
--- nodes have certainties and names (possibly empty strings)
-packSimplePhylo ::   pack   => ([(Int, String)], [(Int, Double, String)], [(Int, Int, Double)], [(Int, Int)]) -> SimplePhylo
-unpackSimplePhylo :: unpack => SimplePhylo -> ([(Int, String)], [(Int, Double, String)], [(Int, Int, Double)], [(Int, Int)])
-
-
--- Where c is the edge type and a is the leaf type
+-- Where
+--  n is the node type
+--  e is the edge type
+--  l is the leaf type
 packNelTree   :: pack   => ([(Int, n)], [(Int, Int, e)], [(Int, l)]) -> NelTree n e l
 unpackNelTree :: unpack => NelTree n e l -> ([(Int, n)], [(Int, Int, e)], [(Int, l)])
 
-
-treeOf :: ([Seq] -> NelTree n e Int) -> [(ann, seq)] -> NelTree n e (ann, seq)
-
-
-nodes :: NelTree n e l -> [n]
-edges :: NelTree n e l -> [e]
-leafs :: NelTree n e l -> [l]
-
-
-filterNode :: (n -> Bool) -> NelTree n e l -> NelTree n e l
-filterEdge :: (e -> Bool) -> NelTree n e l -> NelTree n e l
-filterLeaf :: (v -> Bool) -> NelTree n e l -> NelTree n e l
-
-
-mapNode :: (n -> n') -> NelTree n e l -> NelTree n' e l
-mapEdge :: (e -> e') -> NelTree n e l -> NelTree n e' l
-mapLeaf :: (v -> v') -> NelTree n e l -> NelTree n e l'
-
-
-alterChildren :: (n -> [(e, NelTree n e l)]) -> NelTree n e l -> NelTree n e l
-
-
-viewTree :: NelTree n e l -> ()
-
-
-toSimplePhylo :: Tree n e l -> SimplePhylo
+packAlignment   :: pack   => [(a, Str)] -> Alignment a
+unpackAlignment :: unpack => Alignment a -> [(a, Str)]

@@ -1,20 +1,8 @@
-module bio.algo
+module bio.algo (*)
 
-import bio.tree
+import bio.tree (Tree)
 import bio.pure
 
-nj_tree :: [Seq] -> NelTree n e Int
+nj :: [Str] -> Tree () Real Int
 
-align :: [Seq] -> [Seq]
-    -- where
-    -- map ungap (align xs) == xs
-
--- Major algorithms
 align :: [Str] -> [Str]
-mask :: Str -> Str
-
-protein_structure :: opts -> AA -> ProteinStructure
-rna_structure :: opts -> RNA -> RnaStructure
-
--- protein annotations
-glycosylation_sites :: opts -> AA -> [Int]

@@ -1,10 +1,8 @@
-module bio.tree
-
-export Tree
-export randomTree
+module bio.tree (*)
 
 source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
-source R from "tree.R" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
+source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
+source Python3 from "tree.py" ("mlc_pack_tree_dendropy" as packTree, "mlc_unpack_tree_dendropy" as unpackTree)
 
 packTree :: pack => ([n], [(Int, Int, e)], [l]) -> Tree n e l 
 unpackTree :: unpack => Tree n e l -> ([n], [(Int, Int, e)], [l])
@@ -15,36 +13,100 @@ unpackTree Cpp :: unpack => "Tree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)],
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
 -- when packing and unpacking indices need to be tweacked. In fact, I should add
 -- a dedicated Index type.
-packTree R   :: pack   => ([n], [("integer", "integer", e)], [l]) -> "phylo" n e l
-unpackTree R :: unpack => "phylo" n e l -> ([n], [("integer", "integer", e)], [l])
+packTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
+unpackTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
+
+packTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
+unpackTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
 
 source R from "ape.R" ("randomTree")
 
 randomTree :: Int -> Tree Str Real Str
 randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
 
--- treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
---
--- pull :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
---
--- mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
---
--- nodes :: Tree n e l -> [n]
--- edges :: Tree n e l -> [e]
--- leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
---
--- edgeMap :: Tree n e l -> Map Int (Int, e)
---
--- root :: Tree n e l -> Int
--- root = head . filter ne . enumerate . sort . fst . values . edgeMap
---
--- filterNode :: (n -> Bool) -> Tree n e l -> Tree n e l
--- filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
--- filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
---
--- mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
--- mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
--- mapLeaf :: (v -> v') -> Tree n e l -> Tree n e l'
+treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
 
--- sort the edgelist by the first element
--- iterate through using binary search to find children
+
+------- Atom Operations --------------------------------------------------------
+
+node :: Tree n e l -> n
+kids :: Tree n e l -> [(e, Tree n e l)]
+leaf :: Tree n e l -> l
+
+edgeMap :: Tree n e l -> Map Int (Int, e)
+
+root :: Tree n e l -> Int
+root = head . filter ne . enumerate . sort . fst . values . edgeMap
+
+
+------- Pull Operations -------------------------------------------------------
+
+-- general function for pulling values from
+pull :: (l -> (a, n'))
+     -> (n -> e -> a -> n' -> e')
+     -> (n -> [(e', n', a)] -> (a, n'))
+     -> Tree n e l
+     -> Tree n' e' l
+
+-- pull values from leaf to root
+pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+pullNode f g = pull (\l -> (Null, f l)) (\ n e a n' -> e) (\n es -> g (map snd es))
+
+
+------- Push Operations -------------------------------------------------------
+
+-- push a value down a tree, changing the node, edge and leaf types, but preserving topology
+push :: (a -> n -> n')
+     -> (a -> n' -> e -> n -> (e', n'))
+     -> (a -> n' -> e -> l -> (e', l'))
+     -> (Tree n e l -> a -> a)
+     -> a
+     -> Tree n e l
+     -> Tree n' e' l'
+
+mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
+mapNode f = push (\ a n -> f n) (\ a n' e n -> (e, f n)) (\ a n' e l -> (e, l)) (\t a -> a) Null t
+
+mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
+mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) Null t
+
+mapLeaf :: (l -> l') -> Tree n e l -> Tree n e l'
+mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) Null t
+
+mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
+mapChildWithParent f g
+    = push
+      (\ a n -> f n)
+      (\ a n' e n -> (e, g n' n))
+      (\ a n' e l -> (e, l))
+      (\ t a -> a)
+      Null
+
+
+------- Fold Operations -------------------------------------------------------
+
+foldTree :: (a -> a -> a) -> (Tree n e l -> a) -> Tree n e l -> a -> a 
+
+nodes :: Tree n e l -> [n]
+nodes = foldTree join (\t -> ifelse isNode [node t] []) []
+
+edges :: Tree n e l -> [e]
+edges = foldTree join (map fst . kids) []
+
+leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
+leafs = foldTree join (\t -> ifelse isNode [] [leaf t]) []
+
+
+------- Topo Operations -------------------------------------------------------
+
+-- change the topology of a tree, but not its type
+alterTree :: (n -> [(e, Tree n e l)] -> [(e, Tree n e l)]) -> Tree n e l -> Tree n e l
+
+filterNode :: (n -> Bool) -> Tree n e l -> Tree n e l
+filterNode f = alterTree (\n es -> filter (\t -> ifelse (isNode t) (f (node t)) True) es)
+
+filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
+filterEdge f = alterTree (\ n es -> filter (f . fst) es)
+
+filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
+filterNode f = alterTree (\n es -> filter (\t -> ifelse (isNode t) True (f (leaf t))) es)

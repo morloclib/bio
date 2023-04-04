@@ -1,0 +1,13 @@
+module bio.pure (*)
+
+source Cpp from "pure.hpp" ("revcom")
+
+revcom :: Str -> Str
+revcom Cpp :: "std::string" -> "std::string"
+
+reverseComplement :: DNA -> DNA
+translate :: DNA -> AA
+trimAlignment :: Int -> Int -> [Str] -> [Str]
+ungap :: Str -> Str
+asFasta :: Int -> [(Str, Str)] -> Str
+fromFasta :: Str -> [(Str, Str)]

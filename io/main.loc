@@ -1,9 +1,6 @@
-module bio.io
+module bio.io (*)
 
 source Cpp from "fastaIO.hpp" ("readFasta", "writeFasta")
-
-export readFasta
-export writeFasta
 
 type (Fasta a) = [(a, Str)]
 type Cpp (Fasta a) = [(a, "std::string")]

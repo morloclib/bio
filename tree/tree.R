@@ -1,5 +1,5 @@
 # packTree R   :: pack   => ([n], [("int", "int", e)], [l]) -> "phylo" n e l
-mlc_pack_tree <- function(x){
+mlc_pack_tree_phylo <- function(x){
     nodes <- x[[1]]
     edges <- lapply(x[[2]], function(e) e[[3]])
     leafs <- x[[3]]
@@ -18,7 +18,7 @@ mlc_pack_tree <- function(x){
 }
 
 # unpackTree R :: unpack => "phylo" n e l -> ([n], [("int", "int", e)], [l])
-mlc_unpack_tree <- function(tree){
+mlc_unpack_tree_phylo <- function(tree){
     if(is.null(tree$edge.length)){
         tree$edge.length <- lapply(1:nrow(tree$edge), function(i) "")
     }

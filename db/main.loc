@@ -1,1 +1,32 @@
-module bio.db
+module bio.db (*)
+
+source Python from "entrez.py" ("search_entrez_mlc" as searchEntrez)
+
+record EntrezSearchConfig = EntrezSearchConfig
+  { email :: Str
+  , db :: Str  
+  , mindate :: Str
+  , maxdate :: Str
+  , retmax :: Int 
+  }
+
+record Python EntrezSearchConfig = "dict"
+  { email :: "str"
+  , db :: "str"  
+  , mindate :: "str"
+  , maxdate :: "str"
+  , retmax :: "int"
+  }
+
+searchEntrez :: EntrezSearchConfig -> Str -> [Str]
+searchEntrez py :: EntrezSearchConfig -> "str" -> ["str"]
+
+nucleotideAccessionToXml :: [Str] -> [Str] 
+
+-- search = searchEntrez
+--   { email = "weena@morloc.com"
+--   , db = "nuccore"
+--   , mindate = "2021/01/01"
+--   , maxdate = "2022/12/31"
+--   , retmax = 20
+--   }

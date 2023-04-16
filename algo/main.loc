@@ -1,6 +1,6 @@
 module bio.algo (*)
 
-import bio.tree (Tree)
+import bio.tree (pullNode)
 import bio.pure
 
 nj :: [Str] -> Tree () Real Int

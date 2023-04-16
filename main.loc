@@ -1,7 +1,8 @@
 module bio (*)
 
 -- import bio.pure
-import bio.io
+import bio.io (readFasta, writeFasta)
+import bio.tree (treeBy, pullNode, mapChildWithParent)
 
 -- reverseComplement :: DNA -> DNA
 -- translate :: DNA -> AA

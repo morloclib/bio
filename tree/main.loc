@@ -1,4 +1,4 @@
-module bio.tree (*)
+module bio.tree (Tree, treeBy, pullNode, mapChildWithParent)
 
 source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
 source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
@@ -50,7 +50,7 @@ pull :: (l -> (a, n'))
 
 -- pull values from leaf to root
 pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
-pullNode f g = pull (\l -> (Null, f l)) (\ n e a n' -> e) (\n es -> g (map snd es))
+pullNode f g = pull (\l -> ((), f l)) (\ n e a n' -> e) (\n es -> ((), g (map snd es)))
 
 
 ------- Push Operations -------------------------------------------------------
@@ -65,13 +65,13 @@ push :: (a -> n -> n')
      -> Tree n' e' l'
 
 mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
-mapNode f = push (\ a n -> f n) (\ a n' e n -> (e, f n)) (\ a n' e l -> (e, l)) (\t a -> a) Null t
+mapNode f = push (\ a n -> f n) (\ a n' e n -> (e, f n)) (\ a n' e l -> (e, l)) (\t a -> a) () t
 
 mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
-mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) Null t
+mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) () t
 
 mapLeaf :: (l -> l') -> Tree n e l -> Tree n e l'
-mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) Null t
+mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) () t
 
 mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
 mapChildWithParent f g
@@ -80,7 +80,7 @@ mapChildWithParent f g
       (\ a n' e n -> (e, g n' n))
       (\ a n' e l -> (e, l))
       (\ t a -> a)
-      Null
+      ()
 
 
 ------- Fold Operations -------------------------------------------------------

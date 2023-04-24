@@ -1,4 +1,4 @@
-module bio.tree (Tree, treeBy, pullNode, mapChildWithParent)
+module bio.tree (treeBy, pullNode, mapChildWithParent)
 
 source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
 source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)

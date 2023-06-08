@@ -1,8 +1,25 @@
-module bio.tree (treeBy, pullNode, mapChildWithParent)
+module bio.tree (*)
 
-source Cpp from "tree.hpp" ("mlc_pack_tree" as packTree, "mlc_unpack_tree" as unpackTree)
+-- This type alias importing is getting a bit ludicrous
+import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List)
+import base (snd3, join, ne)
+
+source Cpp from "tree.hpp"
+  ( "mlc_pack_tree" as packTree
+  , "mlc_unpack_tree" as unpackTree
+  , "mlc_push" as push
+  , "mlc_pull" as pull
+  , "mlc_treeBy" as treeBy
+  , "mlc_foldTree" as foldTree
+  , "mlc_alterTree" as alterTree
+  )
+
 source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
 source Python3 from "tree.py" ("mlc_pack_tree_dendropy" as packTree, "mlc_unpack_tree_dendropy" as unpackTree)
+
+type R (Tree n e l) = "phylo" n e l 
+type Py (Tree n e l) = "dendropy" n e l 
+type Cpp (Tree n e l) = "Tree<$1,$2,$3>" n e l 
 
 packTree :: pack => ([n], [(Int, Int, e)], [l]) -> Tree n e l 
 unpackTree :: unpack => Tree n e l -> ([n], [(Int, Int, e)], [l])
@@ -41,7 +58,7 @@ root = head . filter ne . enumerate . sort . fst . values . edgeMap
 
 ------- Pull Operations -------------------------------------------------------
 
--- general function for pulling values from
+-- general function for pulling values from tip to root
 pull :: (l -> (a, n'))
      -> (n -> e -> a -> n' -> e')
      -> (n -> [(e', n', a)] -> (a, n'))
@@ -50,8 +67,7 @@ pull :: (l -> (a, n'))
 
 -- pull values from leaf to root
 pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
-pullNode f g = pull (\l -> ((), f l)) (\ n e a n' -> e) (\n es -> ((), g (map snd es)))
-
+pullNode f g = pull (\l -> ((), f l)) (\ n e a n' -> e) (\n es -> ((), g (map snd3 es)))
 
 ------- Push Operations -------------------------------------------------------
 
@@ -65,13 +81,19 @@ push :: (a -> n -> n')
      -> Tree n' e' l'
 
 mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
-mapNode f = push (\ a n -> f n) (\ a n' e n -> (e, f n)) (\ a n' e l -> (e, l)) (\t a -> a) () t
+mapNode f
+    = push
+      (\ a n -> f n) -- at the root, ignore the accululator, alfter the node with the given function `f`
+      (\ a n' e n -> (e, f n)) -- at each internal node, ignore the accumulator and context and alter the node with `f`
+      (\ a n' e l -> (e, l)) -- do not change the leaf values
+      (\t a -> a) -- do not change the accumulator when ascending
+      () -- initialize the accumulator to unit (and it will stay as unit)
 
 mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
-mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) () t
+mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) ()
 
 mapLeaf :: (l -> l') -> Tree n e l -> Tree n e l'
-mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) () t
+mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) ()
 
 mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
 mapChildWithParent f g
@@ -85,7 +107,7 @@ mapChildWithParent f g
 
 ------- Fold Operations -------------------------------------------------------
 
-foldTree :: (a -> a -> a) -> (Tree n e l -> a) -> Tree n e l -> a -> a 
+foldTree :: (a -> a -> a) -> (Tree n e l -> a) -> a -> Tree n e l -> a
 
 nodes :: Tree n e l -> [n]
 nodes = foldTree join (\t -> ifelse isNode [node t] []) []

@@ -1,4 +1,4 @@
-require(ape)
+suppressMessages(require(ape))
 
 randomTree <- function(n){
     x <- rtree(n)

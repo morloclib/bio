@@ -1,12 +1,16 @@
 module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
-import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List)
+import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map)
 import base (snd3, join, ne)
 
 source Cpp from "tree.hpp"
   ( "mlc_pack_tree" as packTree
   , "mlc_unpack_tree" as unpackTree
+  , "mlc_node" as node
+  , "mlc_kids" as kids
+  , "mlc_childLeafs" as childLeafs
+  , "mlc_edgeMap" as edgeMap
   , "mlc_push" as push
   , "mlc_pull" as pull
   , "mlc_treeBy" as treeBy
@@ -48,7 +52,7 @@ treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
 
 node :: Tree n e l -> n
 kids :: Tree n e l -> [(e, Tree n e l)]
-leaf :: Tree n e l -> l
+childLeafs :: Tree n e l -> [l]
 
 edgeMap :: Tree n e l -> Map Int (Int, e)
 
@@ -116,7 +120,7 @@ edges :: Tree n e l -> [e]
 edges = foldTree join (map fst . kids) []
 
 leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
-leafs = foldTree join (\t -> ifelse isNode [] [leaf t]) []
+leafs = foldTree join childLeafs []
 
 
 ------- Topo Operations -------------------------------------------------------

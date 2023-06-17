@@ -2,7 +2,7 @@ module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
 import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map)
-import base (snd3, join, ne)
+import base (snd3, map, join, ne)
 
 source Cpp from "tree.hpp"
   ( "mlc_pack_tree" as packTree
@@ -32,7 +32,7 @@ packTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "Tree<$1,$2,$3>" 
 unpackTree Cpp :: unpack => "Tree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
 
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
--- when packing and unpacking indices need to be tweacked. In fact, I should add
+-- when packing and unpacking indices need to be tweaked. In fact, I should add
 -- a dedicated Index type.
 packTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
 unpackTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
@@ -70,7 +70,7 @@ pull :: (l -> (a, n'))
      -> Tree n' e' l
 
 -- pull values from leaf to root
-pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+-- pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
 pullNode f g = pull (\l -> ((), f l)) (\ n e a n' -> e) (\n es -> ((), g (map snd3 es)))
 
 ------- Push Operations -------------------------------------------------------
@@ -135,4 +135,4 @@ filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
 filterEdge f = alterTree (\ n es -> filter (f . fst) es)
 
 filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
-filterNode f = alterTree (\n es -> filter (\t -> ifelse (isNode t) True (f (leaf t))) es)
+filterLeaf f = alterTree (\n es -> filter (\t -> ifelse (isNode t) True (f (leaf t))) es)

@@ -1,8 +1,12 @@
-import treeTest (foo)
+module treeTest (foo)
 
--- import cppbase (id)
-import rbase (id)
+import conventions (Str, Real)
+
+-- functions for language conversion
+import rbase (id as asR)
+import pybase (id as asPy)
+import cppbase (id as asCpp)
+
 import bio.tree (Tree, randomTree)
 
-foo Cpp :: "int" -> "Tree<$1,$2,$3>" "std::string" "double" "std::string"
-foo n = id (randomTree n)
+foo n = asR . asCpp . asPy . randomTree

@@ -1,8 +1,11 @@
 module bio.algo (*)
 
-import bio.tree (pullNode)
+import conventions (Str, Real, Int, List, Unit)
+
+import bio.tree (pullNode, Tree)
 import bio.pure
 
-nj :: [Str] -> Tree () Real Int
+source Cpp from "algo.hpp" ("nj", "align")
 
+nj :: [Str] -> Tree () Real Int
 align :: [Str] -> [Str]

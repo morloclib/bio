@@ -1,6 +1,11 @@
 module bio.db (*)
 
-source Python from "entrez.py" ("search_entrez_mlc" as searchEntrez)
+import conventions (Str, List)
+
+source Python from "entrez.py" 
+  ( "mlc_search_entrez" as searchEntrez
+  , "mlc_nucleotide_accession_to_xml" as nucleotideAccessionToXml
+  )
 
 record EntrezSearchConfig = EntrezSearchConfig
   { email :: Str

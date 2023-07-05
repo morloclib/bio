@@ -1,8 +1,8 @@
 module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
-import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map)
-import base (snd3, map, join, ne)
+import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
+import base (snd, map, join, ne)
 
 source Cpp from "tree.hpp"
   ( "mlc_pack_tree" as packTree
@@ -12,10 +12,15 @@ source Cpp from "tree.hpp"
   , "mlc_childLeafs" as childLeafs
   , "mlc_edgeMap" as edgeMap
   , "mlc_push" as push
+  , "mlc_push_val" as pushVal
   , "mlc_pull" as pull
+  , "mlc_pull_val" as pullVal
   , "mlc_treeBy" as treeBy
   , "mlc_foldTree" as foldTree
   , "mlc_alterTree" as alterTree
+  , "mlc_mapNode" as mapNode
+  , "mlc_mapLeaf" as mapLeaf
+  , "mlc_mapEdge" as mapEdge
   )
 
 source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
@@ -47,7 +52,6 @@ randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
 
 treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
 
-
 ------- Atom Operations --------------------------------------------------------
 
 node :: Tree n e l -> n
@@ -63,50 +67,58 @@ root = head . filter ne . enumerate . sort . fst . values . edgeMap
 ------- Pull Operations -------------------------------------------------------
 
 -- general function for pulling values from tip to root
-pull :: (l -> (a, n'))
-     -> (n -> e -> a -> n' -> e')
-     -> (n -> [(e', n', a)] -> (a, n'))
+pullVal :: (l -> (a, n'))
+        -> (n -> e -> a -> n' -> e')
+        -> (n -> [(e', n', a)] -> (a, n'))
+        -> Tree n e l
+        -> Tree n' e' l
+
+pull :: (l -> n')
+     -> (n -> e -> n' -> e')
+     -> (n -> [(e', n')] -> n')
      -> Tree n e l
      -> Tree n' e' l
 
 -- pull values from leaf to root
--- pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
-pullNode f g = pull (\l -> ((), f l)) (\ n e a n' -> e) (\n es -> ((), g (map snd3 es)))
+-- pull :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+pullNode f g = pull (\l -> f l) (\ n e n' -> e) (\n es -> g (map snd es))
 
 ------- Push Operations -------------------------------------------------------
 
 -- push a value down a tree, changing the node, edge and leaf types, but preserving topology
-push :: (a -> n -> n')
-     -> (a -> n' -> e -> n -> (e', n'))
-     -> (a -> n' -> e -> l -> (e', l'))
-     -> (Tree n e l -> a -> a)
-     -> a
+pushVal :: (a -> n -> n')
+        -> (a -> n' -> e -> n -> (e', n'))
+        -> (a -> n' -> e -> l -> (e', l'))
+        -> (Tree n e l -> a -> a)
+        -> a
+        -> Tree n e l
+        -> Tree n' e' l'
+
+push :: (n -> n')
+     -> (n' -> e -> n -> (e', n'))
+     -> (n' -> e -> l -> (e', l'))
      -> Tree n e l
      -> Tree n' e' l'
 
 mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
 mapNode f
     = push
-      (\ a n -> f n) -- at the root, ignore the accululator, alfter the node with the given function `f`
-      (\ a n' e n -> (e, f n)) -- at each internal node, ignore the accumulator and context and alter the node with `f`
-      (\ a n' e l -> (e, l)) -- do not change the leaf values
-      (\t a -> a) -- do not change the accumulator when ascending
-      () -- initialize the accumulator to unit (and it will stay as unit)
+      (\ n -> f n) -- at the root, ignore the accululator, after the node with the given function `f`
+      (\ n' e n -> (e, f n)) -- at each internal node, ignore the accumulator and context and alter the node with `f`
+      (\ n' e l -> (e, l)) -- do not change the leaf values
 
 mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
-mapEdge f = push (\ a n -> n) (\ a n' e n -> (f e, n)) (\ a n' e l -> (f e, l)) (\t a -> a) ()
+mapEdge f = push (\ n -> n) (\ n' e n -> (f e, n)) (\ n' e l -> (f e, l))
 
 mapLeaf :: (l -> l') -> Tree n e l -> Tree n e l'
-mapLeaf f = push (\ a n -> n) (\ a n' e n -> (e, n)) (\ a n' e l -> (e, f l)) (\t a -> a) ()
+mapLeaf f = push (\ n -> n) (\ n' e n -> (e, n)) (\ n' e l -> (e, f l))
 
 mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
 mapChildWithParent f g
     = push
-      (\ a n -> f n)
-      (\ a n' e n -> (e, g n' n))
-      (\ a n' e l -> (e, l))
-      (\ t a -> a)
-      ()
+      (\ n -> f n)
+      (\ n' e n -> (e, g n' n))
+      (\ n' e l -> (e, l))
 
 
 ------- Fold Operations -------------------------------------------------------

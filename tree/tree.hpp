@@ -11,15 +11,17 @@
 #include <vector>
 #include <variant>
 
+#include <mlc.hpp>
+
 template <typename Node, typename Edge, typename Leaf>
 struct Tree {
     Node data;
-    std::vector<std::variant<Tree, Leaf>> children;
+    std::vector<std::variant<Tree<Node, Edge, Leaf>, Leaf>> children;
     std::vector<Edge> edges;
 };
 
 template <typename Node, typename Edge, typename Leaf>
-int mlc_count_nodes(const Tree<Node, Edge, Leaf>& tree) {
+int mlc_count_nodes(Tree<Node, Edge, Leaf> tree) {
     int count = 1;
     for (const auto& child : tree.children) {
         if (std::holds_alternative<Tree<Node, Edge, Leaf>>(child)) {
@@ -32,10 +34,10 @@ int mlc_count_nodes(const Tree<Node, Edge, Leaf>& tree) {
 template <typename Node, typename Edge, typename Leaf>
 Tree<Node, Edge, Leaf> mlc_pack_tree_r(
         size_t node_index,
-        const std::vector<Node>& nodes,
-        const std::vector<Leaf>& leafs,
-        const std::vector<std::vector<Edge>>& edges,
-        const std::vector<std::vector<int>>& child_indices) {
+        std::vector<Node> nodes,
+        std::vector<Leaf> leafs,
+        std::vector<std::vector<Edge>> edges,
+        std::vector<std::vector<int>> child_indices) {
     std::vector<std::variant<Tree<Node, Edge, Leaf>, Leaf>> children;
 
     for (int child_index : child_indices[node_index]) {
@@ -55,9 +57,9 @@ Tree<Node, Edge, Leaf> mlc_pack_tree_r(
 }
 
 template <typename Node, typename Edge, typename Leaf>
-Tree<Node, Edge, Leaf> mlc_pack_tree(const std::tuple<std::vector<Node>,
+Tree<Node, Edge, Leaf> mlc_pack_tree(std::tuple<std::vector<Node>,
                            std::vector<std::tuple<int, int, Edge>>,
-                           std::vector<Leaf>>& pack) {
+                           std::vector<Leaf>> pack) {
     const auto& [nodes, edges, leafs] = pack;
 
     // Store the children and edges for every node (these include leaf and node children)
@@ -78,7 +80,7 @@ Tree<Node, Edge, Leaf> mlc_pack_tree(const std::tuple<std::vector<Node>,
 
 template <typename Node, typename Edge, typename Leaf>
 std::tuple<std::vector<Node>, std::vector<std::tuple<int, int, Edge>>, std::vector<Leaf>>
-mlc_unpack_tree(const Tree<Node, Edge, Leaf>& tree)
+mlc_unpack_tree(const Tree<Node, Edge, Leaf> &tree)
 {
     std::vector<Node> nodes;
     std::vector<Leaf> leafs;
@@ -91,7 +93,7 @@ mlc_unpack_tree(const Tree<Node, Edge, Leaf>& tree)
 
 
 template <typename Node, typename Edge, typename Leaf>
-void mlc_unpack_tree_r(const Tree<Node, Edge, Leaf>& tree, std::vector<Node>& nodes,
+mlc::Unit mlc_unpack_tree_r(const Tree<Node, Edge, Leaf>& tree, std::vector<Node> nodes,
                        std::vector<Leaf>& leafs, std::vector<std::tuple<int, int, Edge>>& edges, int number_of_nodes, int index)
 {
     nodes.push_back(tree.data);
@@ -105,6 +107,7 @@ void mlc_unpack_tree_r(const Tree<Node, Edge, Leaf>& tree, std::vector<Node>& no
             edges.push_back(std::make_tuple(index, leafs.size() + number_of_nodes - 1, tree.edges.front()));
         }
     }
+    return mlc::unit;
 }
 
 // node :: Tree n e l -> n
@@ -132,9 +135,9 @@ std::vector<Leaf> mlc_childLeafs(Tree<Node, Edge, Leaf> tree){
 }
 
 template <typename Node, typename Edge, typename Leaf, typename NewLeaf>
-Tree<Node, Edge, NewLeaf> mapLeafs(
+Tree<Node, Edge, NewLeaf> mlc_mapLeaf(
     std::function<NewLeaf(Leaf)> func, 
-    const Tree<Node, Edge, Leaf>& tree
+    Tree<Node, Edge, Leaf> tree
 ) {
     Tree<Node, Edge, NewLeaf> newTree;
     newTree.data = tree.data;
@@ -150,7 +153,7 @@ Tree<Node, Edge, NewLeaf> mapLeafs(
         else if (std::holds_alternative<Tree<Node, Edge, Leaf>>(child)) {
             // It's a tree. Recursively call mapLeafs on it and add it to newTree.
             const Tree<Node, Edge, Leaf>& oldSubtree = std::get<Tree<Node, Edge, Leaf>>(child);
-            Tree<Node, Edge, NewLeaf> newSubtree = mapLeafs(func, oldSubtree);
+            Tree<Node, Edge, NewLeaf> newSubtree = mlc_mapLeaf(func, oldSubtree);
             newTree.children.push_back(newSubtree);
         }
     }
@@ -170,25 +173,24 @@ Tree<Node, Edge, NewLeaf> mapLeafs(
 // integer indices as leaves. These indices are used to lookup the appropriate
 // leaf in xs and replace the list in the tree.
 template<typename Node, typename Edge, typename Leaf, typename B>
-Tree<Node, Edge, Leaf> treeBy(
+Tree<Node, Edge, Leaf> mlc_treeBy(
     std::function<Tree<Node, Edge, int>(std::vector<B>)> buildTree,
-    std::vector<std::pair<Leaf, B>> xs
+    std::vector<std::tuple<Leaf, B>> xs
 ) {
     // Extract the second element of each pair in xs to pass to buildTree.
     std::vector<B> buildTreeArgs;
     for (auto& pair : xs) {
-        buildTreeArgs.push_back(pair.second);
+        buildTreeArgs.push_back(std::get<1>(pair));
     }
 
     // Build the initial tree.
     Tree<Node, Edge, int> indexTree = buildTree(buildTreeArgs);
 
-    // Replace each leaf index with the corresponding leaf value from xs.
-    Tree<Node, Edge, Leaf> finalTree;
-    // Assuming the Tree structure has a function `traverse` which traverse through the tree and replace leaf values
-    indexTree.traverse([&](int index) {
-        return xs[index].first;
-    }, finalTree);
+    // Replace indices with their corresponding leafs
+    Tree<Node, Edge, Leaf> finalTree = mlc_mapLeaf(
+        [&](int index) { return std::get<0>(xs[index]); },
+        indexTree
+    );
 
     return finalTree;
 }
@@ -202,10 +204,10 @@ Tree<Node, Edge, Leaf> treeBy(
 //      -> Tree n e l
 //      -> Tree n' e' l'
 template<typename Accumulator, typename Node, typename Edge, typename Leaf, typename NodePrime, typename EdgePrime, typename LeafPrime>
-Tree<NodePrime, EdgePrime, LeafPrime> push(
+Tree<NodePrime, EdgePrime, LeafPrime> mlc_push_val(
     std::function<NodePrime(Accumulator, Node)> handleRoot,
-    std::function<std::pair<EdgePrime, NodePrime>(Accumulator, NodePrime, Edge, Node)> alterChildNode,
-    std::function<std::pair<EdgePrime, LeafPrime>(Accumulator, NodePrime, Edge, Leaf)> alterLeaf,
+    std::function<std::tuple<EdgePrime, NodePrime>(Accumulator, NodePrime, Edge, Node)> alterChildNode,
+    std::function<std::tuple<EdgePrime, LeafPrime>(Accumulator, NodePrime, Edge, Leaf)> alterLeaf,
     std::function<Accumulator(Tree<Node, Edge, Leaf>, Accumulator)> updateAccumulator,
     Accumulator a,
     Tree<Node, Edge, Leaf> initialTree
@@ -214,16 +216,51 @@ Tree<NodePrime, EdgePrime, LeafPrime> push(
     return Tree<NodePrime, EdgePrime, LeafPrime>{};
 }
 
+
+// push :: (n -> n')
+//      -> (n' -> e -> n -> (e', n'))
+//      -> (n' -> e -> l -> (e', l'))
+//      -> Tree n e l
+//      -> Tree n' e' l'
+template<typename Node, typename Edge, typename Leaf, typename NodePrime, typename EdgePrime, typename LeafPrime>
+Tree<NodePrime, EdgePrime, LeafPrime> mlc_push(
+    std::function<NodePrime(Node)> handleRoot,
+    std::function<std::tuple<EdgePrime, NodePrime>(NodePrime, Edge, Node)> alterChildNode,
+    std::function<std::tuple<EdgePrime, LeafPrime>(NodePrime, Edge, Leaf)> alterLeaf,
+    Tree<Node, Edge, Leaf> initialTree
+) {
+    // Implementation goes here
+    return Tree<NodePrime, EdgePrime, LeafPrime>{};
+}
+
+
 // pull :: (l -> (a, n'))
 //      -> (n -> e -> a -> n' -> e')
 //      -> (n -> [(e', n', a)] -> (a, n'))
 //      -> Tree n e l
 //      -> Tree n' e' l
 template<typename Leaf, typename A, typename NodePrime, typename Node, typename Edge, typename EdgePrime>
-Tree<NodePrime, EdgePrime, Leaf> pull(
-    std::function<std::pair<A, NodePrime>(Leaf)> handleLeaf,
+Tree<NodePrime, EdgePrime, Leaf> mlc_pull_val(
+    std::function<std::tuple<A, NodePrime>(Leaf)> handleLeaf,
     std::function<EdgePrime(Node, Edge, A, NodePrime)> updateEdge,
-    std::function<std::pair<A, NodePrime>(Node, std::vector<std::tuple<EdgePrime, NodePrime, A>>)> updateNode,
+    std::function<std::tuple<A, NodePrime>(Node, std::vector<std::tuple<EdgePrime, NodePrime, A>>)> updateNode,
+    Tree<Node, Edge, Leaf> initialTree 
+) {
+    // Implementation goes here
+    return Tree<NodePrime, EdgePrime, Leaf>{};
+}
+
+
+// pullNull :: (l -> n')
+//      -> (n -> e -> n' -> e')
+//      -> (n -> [(e', n')] -> n')
+//      -> Tree n e l
+//      -> Tree n' e' l
+template<typename Leaf, typename NodePrime, typename Node, typename Edge, typename EdgePrime>
+Tree<NodePrime, EdgePrime, Leaf> mlc_pull(
+    std::function<NodePrime(Leaf)> handleLeaf,
+    std::function<EdgePrime(Node, Edge, NodePrime)> updateEdge,
+    std::function<NodePrime(Node, std::vector<std::tuple<EdgePrime, NodePrime>>)> updateNode,
     Tree<Node, Edge, Leaf> initialTree 
 ) {
     // Implementation goes here
@@ -236,7 +273,7 @@ Tree<NodePrime, EdgePrime, Leaf> pull(
 //          -> Tree n e l
 //          -> a
 template<typename Accumulator, typename Node, typename Edge, typename Leaf>
-Accumulator foldTree(
+Accumulator mlc_foldTree(
     std::function<Accumulator(Accumulator, Accumulator)> f,
     std::function<Accumulator(Tree<Node, Edge, Leaf>)> foldChild,
     Accumulator b,
@@ -250,8 +287,8 @@ Accumulator foldTree(
 //           -> Tree n e l
 //           -> Tree n e l
 template<typename Node, typename Edge, typename Leaf>
-Tree<Node, Edge, Leaf> alterTree(
-    std::function<std::vector<std::pair<Edge, Tree<Node, Edge, Leaf>>>(Node, std::vector<std::pair<Edge, Tree<Node, Edge, Leaf>>>)> updateChildren,
+Tree<Node, Edge, Leaf> mlc_alterTree(
+    std::function<std::vector<std::tuple<Edge, Tree<Node, Edge, Leaf>>>(Node, std::vector<std::tuple<Edge, Tree<Node, Edge, Leaf>>>)> updateChildren,
     Tree<Node, Edge, Leaf> initialTree
 ) {
     // Implementation goes here

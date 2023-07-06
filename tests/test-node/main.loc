@@ -1,0 +1,9 @@
+module m (foo)
+
+import conventions (Str, Real, List, Tuple2)
+
+import base (map, snd)
+
+import bio.tree (node, subtrees, randomTree)
+
+foo = map (node . snd) . subtrees . randomTree

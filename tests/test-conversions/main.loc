@@ -1,0 +1,12 @@
+module treeTest (foo)
+
+import conventions (Str, Real)
+
+-- functions for language conversion
+import rbase (id as asR)
+import pybase (id as asPy)
+import cppbase (id as asCpp)
+
+import bio.tree (Tree, randomTree)
+
+foo = asR . asCpp . asPy . randomTree

@@ -1,0 +1,7 @@
+module m (foo)
+
+import conventions (Str, Real)
+
+import bio.tree (subtrees, childLeafs, randomTree)
+
+foo = childLeafs . randomTree

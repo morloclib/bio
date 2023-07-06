@@ -1,5 +1,5 @@
 all:
-	morloc make tree-test.loc
+	morloc make main.loc
 
 clean:
 	rm -f nexus* pool*

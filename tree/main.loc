@@ -8,7 +8,7 @@ source Cpp from "tree.hpp"
   ( "mlc_pack_tree" as packTree
   , "mlc_unpack_tree" as unpackTree
   , "mlc_node" as node
-  , "mlc_kids" as kids
+  , "mlc_subtrees" as subtrees
   , "mlc_childLeafs" as childLeafs
   , "mlc_edgeMap" as edgeMap
   , "mlc_push" as push
@@ -55,8 +55,8 @@ treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
 ------- Atom Operations --------------------------------------------------------
 
 node :: Tree n e l -> n
-kids :: Tree n e l -> [(e, Tree n e l)]
-childLeafs :: Tree n e l -> [l]
+subtrees :: Tree n e l -> [(e, Tree n e l)]
+childLeafs :: Tree n e l -> [(e, l)]
 
 edgeMap :: Tree n e l -> Map Int (Int, e)
 
@@ -80,8 +80,11 @@ pull :: (l -> n')
      -> Tree n' e' l
 
 -- pull values from leaf to root
--- pull :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
-pullNode f g = pull (\l -> f l) (\ n e n' -> e) (\n es -> g (map snd es))
+pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+pullNode f g = pull
+    (\l -> f l) -- generate n' using f
+    (\n e n' -> e) -- do not change the edge
+    (\n es -> g (map snd es)) -- create new node from child nodes, ignore the current node value
 
 ------- Push Operations -------------------------------------------------------
 
@@ -132,7 +135,7 @@ edges :: Tree n e l -> [e]
 edges = foldTree join (map fst . kids) []
 
 leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
-leafs = foldTree join childLeafs []
+leafs = map snd . foldTree join childLeafs []
 
 
 ------- Topo Operations -------------------------------------------------------

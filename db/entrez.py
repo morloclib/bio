@@ -1,7 +1,7 @@
 import sys
 
 
-def search_entrez_mlc(config, query):
+def mlc_search_entrez(config, query):
     """
     example:
         config = dict(db="nuccore", retmax=20, mindate="2021/01/01", maxdate="2021/12/31")
@@ -26,7 +26,7 @@ def search_entrez_mlc(config, query):
 
     return result["idlist"]
 
-def nucleottide_accession_to_xml_mlc(gb_ids):
+def mlc_nucleottide_accession_to_xml(gb_ids):
     """
     Lookup XML metadata for a list of ids in entrez.
     """

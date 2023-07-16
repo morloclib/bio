@@ -4,63 +4,64 @@ module bio.tree (*)
 import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
 import base (snd, map, join, ne)
 
-source Cpp from "tree.hpp"
-  ( "mlc_pack_tree" as packTree
-  , "mlc_unpack_tree" as unpackTree
-  , "mlc_node" as node
-  , "mlc_subtrees" as subtrees
-  , "mlc_childLeafs" as childLeafs
-  , "mlc_edgeMap" as edgeMap
-  , "mlc_push" as push
-  , "mlc_push_val" as pushVal
-  , "mlc_pull" as pull
-  , "mlc_pull_val" as pullVal
-  , "mlc_treeBy" as treeBy
-  , "mlc_foldTree" as foldTree
-  , "mlc_alterTree" as alterTree
-  , "mlc_mapNode" as mapNode
-  , "mlc_mapLeaf" as mapLeaf
-  , "mlc_mapEdge" as mapEdge
+
+source Cpp from "rooted_tree.hpp"
+  ( "mlc_rooted_pack_tree" as packRootedTree
+  , "mlc_rooted_unpack_tree" as unpackRootedTree
+  , "mlc_rooted_node" as node
+  , "mlc_rooted_subtrees" as subtrees
+  , "mlc_rooted_childLeafs" as childLeafs
+  , "mlc_rooted_edgeMap" as edgeMap
+  , "mlc_rooted_push" as push
+  , "mlc_rooted_push_val" as pushVal
+  , "mlc_rooted_pull" as pull
+  , "mlc_rooted_pull_val" as pullVal
+  , "mlc_rooted_treeBy" as treeBy
+  , "mlc_rooted_foldTree" as foldTree
+  , "mlc_rooted_alterTree" as alterTree
+  , "mlc_rooted_mapNode" as mapNode
+  , "mlc_rooted_mapLeaf" as mapLeaf
+  , "mlc_rooted_mapEdge" as mapEdge
   )
 
 source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
 source Python3 from "tree.py" ("mlc_pack_tree_dendropy" as packTree, "mlc_unpack_tree_dendropy" as unpackTree)
 
-type R (Tree n e l) = "phylo" n e l 
-type Py (Tree n e l) = "dendropy" n e l 
-type Cpp (Tree n e l) = "Tree<$1,$2,$3>" n e l 
+type R (RootedTree n e l) = "phylo" n e l 
+type Py (RootedTree n e l) = "dendropy" n e l 
+type Cpp (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l 
 
-packTree :: pack => ([n], [(Int, Int, e)], [l]) -> Tree n e l 
-unpackTree :: unpack => Tree n e l -> ([n], [(Int, Int, e)], [l])
+packRootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> RootedTree n e l 
+unpackRootedTree :: unpack => RootedTree n e l -> ([n], [(Int, Int, e)], [l])
 
-packTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "Tree<$1,$2,$3>" n e l  
-unpackTree Cpp :: unpack => "Tree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
+packRootedTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "RootedTree<$1,$2,$3>" n e l  
+unpackRootedTree Cpp :: unpack => "RootedTree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
 
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
 -- when packing and unpacking indices need to be tweaked. In fact, I should add
 -- a dedicated Index type.
-packTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
-unpackTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
+packRootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
+unpackRootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
 
-packTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
-unpackTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
+packRootedTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
+unpackRootedTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
 
 source R from "ape.R" ("randomTree")
 
-randomTree :: Int -> Tree Str Real Str
+randomTree :: Int -> RootedTree Str Real Str
 randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
 
-treeBy :: ([b] -> Tree n e Int) -> [(l, b)] -> Tree n e l
+treeBy :: ([b] -> RootedTree n e Int) -> [(l, b)] -> RootedTree n e l
 
 ------- Atom Operations --------------------------------------------------------
 
-node :: Tree n e l -> n
-subtrees :: Tree n e l -> [(e, Tree n e l)]
-childLeafs :: Tree n e l -> [(e, l)]
+node :: RootedTree n e l -> n
+subtrees :: RootedTree n e l -> [(e, RootedTree n e l)]
+childLeafs :: RootedTree n e l -> [(e, l)]
 
-edgeMap :: Tree n e l -> Map Int (Int, e)
+edgeMap :: RootedTree n e l -> Map Int (Int, e)
 
-root :: Tree n e l -> Int
+root :: RootedTree n e l -> Int
 root = head . filter ne . enumerate . sort . fst . values . edgeMap
 
 
@@ -70,17 +71,17 @@ root = head . filter ne . enumerate . sort . fst . values . edgeMap
 pullVal :: (l -> (a, n'))
         -> (n -> e -> a -> n' -> e')
         -> (n -> [(e', n', a)] -> (a, n'))
-        -> Tree n e l
-        -> Tree n' e' l
+        -> RootedTree n e l
+        -> RootedTree n' e' l
 
 pull :: (l -> n')
      -> (n -> e -> n' -> e')
      -> (n -> [(e', n')] -> n')
-     -> Tree n e l
-     -> Tree n' e' l
+     -> RootedTree n e l
+     -> RootedTree n' e' l
 
 -- pull values from leaf to root
-pullNode :: (l -> n') -> ([n'] -> n') -> Tree n e l -> Tree n' e l
+pullNode :: (l -> n') -> ([n'] -> n') -> RootedTree n e l -> RootedTree n' e l
 pullNode f g = pull
     (\l -> f l) -- generate n' using f
     (\n e n' -> e) -- do not change the edge
@@ -92,31 +93,31 @@ pullNode f g = pull
 pushVal :: (a -> n -> n')
         -> (a -> n' -> e -> n -> (e', n'))
         -> (a -> n' -> e -> l -> (e', l'))
-        -> (Tree n e l -> a -> a)
+        -> (RootedTree n e l -> a -> a)
         -> a
-        -> Tree n e l
-        -> Tree n' e' l'
+        -> RootedTree n e l
+        -> RootedTree n' e' l'
 
 push :: (n -> n')
      -> (n' -> e -> n -> (e', n'))
      -> (n' -> e -> l -> (e', l'))
-     -> Tree n e l
-     -> Tree n' e' l'
+     -> RootedTree n e l
+     -> RootedTree n' e' l'
 
-mapNode :: (n -> n') -> Tree n e l -> Tree n' e l
+mapNode :: (n -> n') -> RootedTree n e l -> RootedTree n' e l
 mapNode f
     = push
       (\ n -> f n) -- at the root, ignore the accululator, after the node with the given function `f`
       (\ n' e n -> (e, f n)) -- at each internal node, ignore the accumulator and context and alter the node with `f`
       (\ n' e l -> (e, l)) -- do not change the leaf values
 
-mapEdge :: (e -> e') -> Tree n e l -> Tree n e' l
+mapEdge :: (e -> e') -> RootedTree n e l -> RootedTree n e' l
 mapEdge f = push (\ n -> n) (\ n' e n -> (f e, n)) (\ n' e l -> (f e, l))
 
-mapLeaf :: (l -> l') -> Tree n e l -> Tree n e l'
+mapLeaf :: (l -> l') -> RootedTree n e l -> RootedTree n e l'
 mapLeaf f = push (\ n -> n) (\ n' e n -> (e, n)) (\ n' e l -> (e, f l))
 
-mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> Tree n e l -> Tree n' e l
+mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> RootedTree n e l -> RootedTree n' e l
 mapChildWithParent f g
     = push
       (\ n -> f n)
@@ -126,28 +127,57 @@ mapChildWithParent f g
 
 ------- Fold Operations -------------------------------------------------------
 
-foldTree :: (a -> a -> a) -> (Tree n e l -> a) -> a -> Tree n e l -> a
+foldTree :: (a -> a -> a) -> (RootedTree n e l -> a) -> a -> RootedTree n e l -> a
 
-nodes :: Tree n e l -> [n]
-nodes = foldTree join (\t -> ifelse isNode [node t] []) []
+nodes :: RootedTree n e l -> [n]
+nodes = foldRootedTree join (\t -> ifelse isNode [node t] []) []
 
-edges :: Tree n e l -> [e]
-edges = foldTree join (map fst . kids) []
+edges :: RootedTree n e l -> [e]
+edges = foldRootedTree join (map fst . kids) []
 
-leafs :: Tree n e l -> [l] -- yes, that is how I pluralize leaf
+leafs :: RootedTree n e l -> [l] -- yes, that is how I pluralize leaf
 leafs = map snd . foldTree join childLeafs []
 
 
-------- Topo Operations -------------------------------------------------------
 
--- change the topology of a tree, but not its type
-alterTree :: (n -> [(e, Tree n e l)] -> [(e, Tree n e l)]) -> Tree n e l -> Tree n e l
+source Cpp from "unrooted_tree.hpp"
+  (
 
-filterNode :: (n -> Bool) -> Tree n e l -> Tree n e l
-filterNode f = alterTree (\n es -> filter (\t -> ifelse (isNode t) (f (node t)) True) es)
+  -- packers
+    "mlc_pack_utree" as packUnrootedTree
+  , "mlc_unpack_utree" as unpackUnrootedTree
 
-filterEdge :: (e -> Bool) -> Tree n e l -> Tree n e l
-filterEdge f = alterTree (\ n es -> filter (f . fst) es)
+  -- functions in common with rooted trees (these should be in the typeclass)
+  , "mlc_unrooted_count_nodes" as countNodesU
+  , "mlc_unrooted_count_leafs" as countLeafsU
+  , "mlc_unrooted_count_edges" as countEdgesU
+  , "mlc_unrooted_mapNode" as mapNodeU
+  , "mlc_unrooted_mapEdge" as mapEdgeU
+  , "mlc_unrooted_mapLeaf" as mapLeafU
+  , "mlc_unrooted_treeBy" as treeByU
 
-filterLeaf :: (v -> Bool) -> Tree n e l -> Tree n e l
-filterLeaf f = alterTree (\n es -> filter (\t -> ifelse (isNode t) True (f (leaf t))) es)
+  -- functions unique to unrooted trees
+  , "mlc_unrooted_midpoint" as rootAtMidpoint
+  )
+
+packUnrootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> UnrootedTree n e l 
+unpackUnrootedTree :: unpack => UnrootedTree n e l -> ([n], [(Int, Int, e)], [l])
+
+packUnrootedTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "UnrootedTree<$1,$2,$3>" n e l  
+unpackUnrootedTree Cpp :: unpack => "UnrootedTree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
+
+packUnrootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
+unpackUnrootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
+
+packUnrootedTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
+unpackUnrootedTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
+
+countNodesU :: UnrootedTree n e l -> Int
+countLeafsU :: UnrootedTree n e l -> Int
+countEdgesU :: UnrootedTree n e l -> Int
+mapNodeU :: (n -> n') -> UnrootedTree n e l -> UnrootedTree n' e l 
+mapEdgeU :: (e -> e') -> UnrootedTree n e l -> UnrootedTree n e' l 
+mapLeafU :: (l -> l') -> UnrootedTree n e l -> UnrootedTree n e l'
+treeByU :: ([b] -> UnrootedTree n e Int) -> [(l, b)] -> UnrootedTree n e l
+
+rootAtMidpoint :: UnrootedTree n Real l -> RootedTree n Real l

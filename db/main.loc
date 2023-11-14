@@ -1,10 +1,11 @@
 module bio.db (*)
 
-import conventions (Str, List)
+import conventions (Str, Int, List)
+import json (JsonObj)
 
 source Python from "entrez.py" 
   ( "mlc_search_entrez" as searchEntrez
-  , "mlc_nucleotide_accession_to_xml" as nucleotideAccessionToXml
+  , "mlc_nucleotide_accession_to_json" as nucleotideAccessionToJson
   )
 
 record EntrezSearchConfig = EntrezSearchConfig
@@ -15,7 +16,7 @@ record EntrezSearchConfig = EntrezSearchConfig
   , retmax :: Int 
   }
 
-record Python EntrezSearchConfig = "dict"
+record Py EntrezSearchConfig = "dict"
   { email :: "str"
   , db :: "str"  
   , mindate :: "str"
@@ -24,14 +25,11 @@ record Python EntrezSearchConfig = "dict"
   }
 
 searchEntrez :: EntrezSearchConfig -> Str -> [Str]
-searchEntrez py :: EntrezSearchConfig -> "str" -> ["str"]
 
-nucleotideAccessionToXml :: [Str] -> [Str] 
+record EntrezFetchConfig = EntrezFetchConfig
+  { email :: Str }
 
--- search = searchEntrez
---   { email = "weena@morloc.com"
---   , db = "nuccore"
---   , mindate = "2021/01/01"
---   , maxdate = "2022/12/31"
---   , retmax = 20
---   }
+record Py EntrezFetchConfig = "dict"
+  { email :: "str" }
+
+nucleotideAccessionToJson :: EntrezFetchConfig -> [Str] -> [JsonObj] 

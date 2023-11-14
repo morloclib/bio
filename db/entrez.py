@@ -21,24 +21,34 @@ def mlc_search_entrez(config, query):
         "idtype": "acc",
     }
 
+    result = dict()
+
     req = requests.get(base, params=params)
     result = req.json()["esearchresult"]
 
     return result["idlist"]
 
-def mlc_nucleottide_accession_to_xml(gb_ids):
+def mlc_nucleotide_accession_to_json(config, gb_ids):
     """
     Lookup XML metadata for a list of ids in entrez.
     """
     from Bio import Entrez 
     import time
+
+    Entrez.email = config["email"]
+
     attempt = 0
     while attempt < 5:
         try:
-            return Entrez.efetch(db="nucleotide", id=gb_ids, retmode="xml").read()
+            h = Entrez.efetch(db="nucleotide", id=gb_ids, retmode="xml")
+            x = Entrez.read(h)
+            h.close()
+            return(x)
         except Exception as err:
             attempt += 1
             print(f"Received error from server {err}", file=sys.stderr)
             print(f"Attempt {str(attempt)} of 5 attempts", file=sys.stderr)
+            print(str(config), file=sys.stderr)
+            print(str(gb_ids), file=sys.stderr)
             time.sleep(15)
     raise ValueError("Failed to retrieve ids")

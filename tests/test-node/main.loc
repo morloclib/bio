@@ -1,6 +1,6 @@
 module m (foo)
 
-import conventions (Str, Real, List, Tuple2)
+import conventions (Int, Str, Real, List, Tuple2)
 
 import base (map, snd)
 

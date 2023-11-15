@@ -12,8 +12,8 @@
 #include <variant>
 #include <iostream>
 
-#include <mlc.hpp>
-#include "tree_types.hpp"
+#include "mlccpptypes/prelude.hpp"
+#include "mlccpptypes/bio.hpp"
 
 template <typename Node, typename Edge, typename Leaf>
 int mlc_rooted_count_nodes(RootedTree<Node, Edge, Leaf> tree) {
@@ -125,7 +125,7 @@ std::vector<std::tuple<Edge, RootedTree<Node, Edge, Leaf>>> mlc_rooted_subtrees(
     return subtrees;
 }
 
-// childLeafs :: RootedTree n e l -> [l]
+// childLeafs :: RootedTree n e l -> [(e, l)]
 template <typename Node, typename Edge, typename Leaf>
 std::vector<std::tuple<Edge, Leaf>> mlc_rooted_childLeafs(RootedTree<Node, Edge, Leaf> tree){
     std::vector<std::tuple<Edge, Leaf>> leafs;
@@ -192,7 +192,11 @@ RootedTree<Node, Edge, Leaf> mlc_rooted_treeBy(
 
     // Replace indices with their corresponding leafs
     RootedTree<Node, Edge, Leaf> finalTree = mlc_rooted_mapLeaf(
-        [&](int index) { return std::get<0>(xs[index]); },
+        static_cast<std::function<Leaf(int)>>(
+            [&](int index) {
+               return std::get<0>(xs[index]);
+            }
+        ),
         indexTree
     );
 
@@ -304,5 +308,31 @@ RootedTree<NodePrime, EdgePrime, Leaf> mlc_rooted_pull(
     return newTree;
 }
 
+
+// foldTree :: (l -> a -> a)
+//          -> (n -> e -> a -> a)
+//          -> a
+//          -> RootedTree n e l
+//          -> a
+template<typename Node, typename Edge, typename Leaf, typename Accumulator>
+Accumulator mlc_rooted_foldTree(
+  std::function<Accumulator(Leaf,Accumulator)> foldLeaf,
+  std::function<Accumulator(Node,Edge,Accumulator)> foldNode,
+  Accumulator b,
+  RootedTree<Node,Edge,Leaf> tree
+){
+    for (int i = 0; i < tree.children.size(); i++){
+        auto child = tree.children[i];
+        if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(child)) {
+            const auto& child_tree = std::get<RootedTree<Node, Edge, Leaf>>(child);
+            b = mlc_rooted_foldTree(foldLeaf, foldNode, b, child_tree);
+            b = foldNode(child_tree.data, tree.edges[i], b);
+        } else {
+            const auto& child_leaf = std::get<Leaf>(child);
+            b = foldLeaf(child_leaf, b);
+        }
+    }
+    return b;
+}
 
 #endif

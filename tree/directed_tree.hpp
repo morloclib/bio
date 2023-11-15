@@ -6,13 +6,8 @@
 #include <variant>
 #include <iostream>
 
-#include <mlc.hpp>
-
-template <typename Node, typename Edge, typename Leaf>
-struct DirectedTree {
-    std::vector<std::vector<std::tuple<int, Edge>>> edge;
-    std::vector<std::variant<Node,Leaf>> verts;
-};
+#include "mlccpptypes/prelude.hpp"
+#include "mlccpptypes/bio.hpp" // imports DirectedTree
 
 template <typename Node, typename Edge, typename Leaf>
 int mlc_directed_count_nodes(const DirectedTree<Node, Edge, Leaf>& tree) {

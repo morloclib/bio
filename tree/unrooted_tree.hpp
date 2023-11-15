@@ -12,8 +12,8 @@
 #include <variant>
 #include <iostream>
 
-#include <mlc.hpp>
-#include "tree_types.hpp"
+#include "mlccpptypes/prelude.hpp"
+#include "mlccpptypes/bio.hpp"
 
 
 template <typename Node, typename Edge, typename Leaf>
@@ -159,7 +159,7 @@ UnrootedTree<Node, NewEdge, Leaf> mlc_unrooted_mapEdge(
     std::function<NewEdge(Edge)> func, 
     const UnrootedTree<Node, Edge, Leaf>& tree
 ) {
-    UnrootedTree<NewNode, Edge, Leaf> newTree;
+    UnrootedTree<Node, NewEdge, Leaf> newTree;
     newTree.vert = tree.vert;
 
     for(int i=0; i<tree.out.size(); i++){
@@ -242,7 +242,7 @@ RootedTree<Node, Edge, Leaf> mlc_unrooted_root_at(
 
 
 // mutating helper function to add an edge
-template <typename Node, typename Leaf>
+template <typename Node, typename Edge, typename Leaf>
 void _add_edge(int a, int b, Edge e, UnrootedTree<Node, Edge, Leaf>& unrootedTree){
     unrootedTree.out[a].push_back(std::make_tuple(b, e));
     unrootedTree.out[b].push_back(std::make_tuple(a, e));

@@ -2,7 +2,7 @@ module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
 import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
-import base (snd, map, join, ne)
+import base (snd, map, ne, append)
 
 
 source Cpp from "rooted_tree.hpp"
@@ -20,15 +20,15 @@ source Cpp from "rooted_tree.hpp"
   , "mlc_rooted_foldTree" as foldTree
   , "mlc_rooted_alterTree" as alterTree
   , "mlc_rooted_mapNode" as mapNode
-  , "mlc_rooted_mapLeaf" as mapLeaf
   , "mlc_rooted_mapEdge" as mapEdge
   )
 
-source R from "tree.R" ("mlc_pack_tree_phylo" as packTree, "mlc_unpack_tree_phylo" as unpackTree)
-source Python3 from "tree.py" ("mlc_pack_tree_dendropy" as packTree, "mlc_unpack_tree_dendropy" as unpackTree)
+source R from "tree.R"
+  ( "mlc_pack_tree_phylo" as packRootedTree
+  , "mlc_unpack_tree_phylo" as unpackRootedTree
+  )
 
 type R (RootedTree n e l) = "phylo" n e l 
-type Py (RootedTree n e l) = "dendropy" n e l 
 type Cpp (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l 
 
 packRootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> RootedTree n e l 
@@ -43,10 +43,7 @@ unpackRootedTree Cpp :: unpack => "RootedTree<$1,$2,$3>" n e l -> ([n], [("int",
 packRootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
 unpackRootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
 
-packRootedTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
-unpackRootedTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
-
-source R from "ape.R" ("randomTree")
+source R from "ape.R" ("random_rooted_tree" as randomTree)
 
 randomTree :: Int -> RootedTree Str Real Str
 randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
@@ -127,22 +124,30 @@ mapChildWithParent f g
 
 ------- Fold Operations -------------------------------------------------------
 
-foldTree :: (a -> a -> a) -> (RootedTree n e l -> a) -> a -> RootedTree n e l -> a
+-- general function for pulling values from tip to root
+foldTree :: (l -> a -> a)
+         -> (n -> e -> a -> a)
+         -> a
+         -> RootedTree n e l
+         -> a
 
 nodes :: RootedTree n e l -> [n]
-nodes = foldRootedTree join (\t -> ifelse isNode [node t] []) []
+nodes = foldTree (\l a -> a) (\n e a -> append a n) []
 
 edges :: RootedTree n e l -> [e]
-edges = foldRootedTree join (map fst . kids) []
+edges = foldTree (\l a -> a) (\n e a -> append a e) []
 
 leafs :: RootedTree n e l -> [l] -- yes, that is how I pluralize leaf
-leafs = map snd . foldTree join childLeafs []
+leafs = foldTree (\l a -> append a l) (\n e a -> a) []
 
 
+------- Unrooted Trees --------------------------------------------------------
+
+type R (UnrootedTree n e l) = "phylo" n e l 
+type Cpp (UnrootedTree n e l) = "UnrootedTree<$1,$2,$3>" n e l 
 
 source Cpp from "unrooted_tree.hpp"
   (
-
   -- packers
     "mlc_pack_utree" as packUnrootedTree
   , "mlc_unpack_utree" as unpackUnrootedTree
@@ -160,6 +165,12 @@ source Cpp from "unrooted_tree.hpp"
   , "mlc_unrooted_midpoint" as rootAtMidpoint
   )
 
+source R from "ape.R" ( "random_unrooted_tree" as randomTreeU )
+source R from "tree.R"
+  ( "mlc_pack_tree_phylo" as packUnrootedTree
+  , "mlc_unpack_tree_phylo" as unpackUnrootedTree
+  )
+
 packUnrootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> UnrootedTree n e l 
 unpackUnrootedTree :: unpack => UnrootedTree n e l -> ([n], [(Int, Int, e)], [l])
 
@@ -169,8 +180,8 @@ unpackUnrootedTree Cpp :: unpack => "UnrootedTree<$1,$2,$3>" n e l -> ([n], [("i
 packUnrootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
 unpackUnrootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
 
-packUnrootedTree Py   :: pack   => (["str"], [("int", "int", "float")], ["str"]) -> "dendropy" "str" "float" "str"
-unpackUnrootedTree Py :: unpack => "dendropy" "str" "float" "str" -> (["str"], [("int", "int", "float")], ["str"])
+randomTreeU :: Int -> UnrootedTree Str Real Str
+randomTreeU R :: "integer" -> "phylo" "character" "numeric" "character"
 
 countNodesU :: UnrootedTree n e l -> Int
 countLeafsU :: UnrootedTree n e l -> Int

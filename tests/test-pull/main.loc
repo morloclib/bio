@@ -2,6 +2,6 @@ module m (foo, randomTree)
 
 import conventions (Str, Int, Real, List, Tuple2)
 
-import bio.tree (pull, randomTree, Tree)
+import bio.tree (pull, randomTree, RootedTree)
 
 foo = pull (\l -> l) (\n e n' -> e) (\n xs -> n) . randomTree

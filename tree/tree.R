@@ -5,8 +5,9 @@ mlc_pack_tree_phylo <- function(x){
     leafs <- x[[3]]
 
     edge_map <- lapply(x[[2]], function(e) { c(e[[1]], e[[2]])})
+    edge_map <- do.call(rbind, edge_map)
     edge_map[,1] <- edge_map[,1] + length(leafs) + 1
-    edge_map[,2] <- iflese(edge_map[,2] < length(nodes), edge_map[,2] + length(leafs) + 1, edge_map[,2] - length(nodes) + 1)
+    edge_map[,2] <- ifelse(edge_map[,2] < length(nodes), edge_map[,2] + length(leafs) + 1, edge_map[,2] - length(nodes) + 1)
 
     tree <- list()
     class(tree) <- "phylo"
@@ -29,6 +30,8 @@ mlc_unpack_tree_phylo <- function(tree){
     leafs <- tree$tip.label
     edges <- tree$edge.length
     N <- length(tree$tip.label)
+
+    tree$Nnode <- length(nodes)
 
     # morloc edge maps have 0 as root, nodes as indices (0..N-1),
     # and leafs as indices (N..(L+N-1)).

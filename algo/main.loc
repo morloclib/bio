@@ -1,11 +1,35 @@
 module bio.algo (*)
 
-import conventions (Str, Real, Int, List, Unit)
+import conventions (Str, Real, Int, List, Unit, Map)
+import base (map, Map)
+import matrix (Matrix, selfcmp)
 
-import bio.tree (pullNode, Tree)
+import bio.tree (pullNode, RootedTree)
 import bio.pure
 
-source Cpp from "algo.hpp" ("nj", "align")
+source Cpp from "algo.hpp" ("countKmers", "kmerDistance", "upgmaFromDist")
 
-nj :: [Str] -> Tree () Real Int
-align :: [Str] -> [Str]
+-- count all substrings of length k in string s
+countKmers :: k:Int -> s:Str -> Map Str Int
+
+-- based on k-mer counts derived for two different sequences, generate a single
+-- distance estimate
+kmerDistance :: Map Str Int -> Map Str Int -> Real
+
+-- From a distance matrix, generate a tree with branch lengths
+-- and leafs that are indices into the original sequence list.
+upgmaFromDist :: Matrix Real -> RootedTree () Real Int
+
+-- Create a kmer distance tree using k-mers of length k  
+kmerdist :: Int -> [Str] -> Matrix Real
+kmerdist k = selfcmp kmerDistance . map (countKmers k)
+
+-- Build a UPGMA tree from unaligned sequences using a k-mer distance metric.
+-- I am currently hard-coding the k-mer size. Eventually, I need a means of 
+-- determining an optimal value for this from the input data.
+upgma :: [Str] -> RootedTree () Real Int
+upgma = upgmaFromDist . kmerdist 8
+
+-- treealign :: RootedTree () Real Int -> [Str] -> [Str]
+-- njBase :: Matrix Real -> RootedTree () Real Int
+-- pairwiseAlignment :: (a -> a -> Int) -> a -> [a] -> [a] -> ([a], [a])

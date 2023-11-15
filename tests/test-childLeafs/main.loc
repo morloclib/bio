@@ -1,7 +1,7 @@
 module m (foo)
 
-import conventions (Str, Real)
+import conventions (Str, Int, Tuple2, List, Real)
 
-import bio.tree (subtrees, childLeafs, randomTree)
+import bio.tree (childLeafs, randomTree, RootedTree)
 
 foo = childLeafs . randomTree

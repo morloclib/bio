@@ -1,0 +1,2 @@
+module tree (upgma)
+import bio.algo (upgmaFromDist as upgma)

@@ -60,69 +60,32 @@ double kmerDistance(const std::map<std::string,int>& x, std::map<std::string,int
     return std::sqrt(square_distance);
 }
 
-/*
-
- 1    2  3    4  5
-(A, ((B, C), (D, E)))
-
-6 (2, 3)
-
- 1   6    4  5
-(A, (BC, (D, E)))
-
-7 (4, 5)
-
- 1   6    7
-(A, (BC, (DE)))
-
-8 (6, 7)
-
- 1  8
-(A, BCDE)
-
-0 (1, 8)
-
-*/
-
-
-
-typedef struct IndexPair{
-  size_t a;
-  size_t b;
+typedef struct Edge{
+  int child;
   double dist;
-} IndexPair;
+} Edge;
 
-RootedTree<mlc::Unit, double, int> edge_map_to_tree(std::vector<IndexPair> nodes){
-    std::vector<RootedTree<mlc::Unit, double, int>> subtrees;
-    std::vector<int> indices(nodes.size() + 1, -1);
-    int Nnodes = 0;
-    for (const auto& node : nodes) {
-        int a = node.a;
-        int b = node.b;
-        if (indices[a] == -1) {
-            subtrees.emplace_back(RootedTree<mlc::Unit, double, int>{});
-            subtrees.back().data = mlc::Unit{};
-            subtrees.back().children.emplace_back(a);
-            indices[a] = subtrees.size() - 1;
+RootedTree<mlc::Unit, double, int> edge_map_to_tree(int root, std::vector<std::vector<Edge>> edges){
+    RootedTree<mlc::Unit, double, int> tree;
+
+    for(size_t i = 0; i < edges[root].size(); i++){
+        tree.edges.push_back(edges[root][i].dist);
+        int childIndex = edges[root][i].child;
+
+        if(edges[childIndex].size() == 0){
+          // child is a leaf
+          // std::cerr << "adding leaf " << childIndex << " to node " << root << std::endl;
+          tree.children.push_back(childIndex);
+        } else {
+          // child is a subtree
+          RootedTree<mlc::Unit, double, int> childTree = edge_map_to_tree(childIndex, edges);
+          // std::cerr << "adding node " << childIndex << " to node " << root << std::endl;
+          tree.children.push_back(childTree); 
         }
-        if (indices[b] == -1) {
-            subtrees.emplace_back(RootedTree<mlc::Unit, double, int>{});
-            subtrees.back().data = mlc::Unit{};
-            subtrees.back().children.emplace_back(b);
-            indices[b] = subtrees.size() - 1;
-        }
-        RootedTree<mlc::Unit, double, int> new_tree{};
-        new_tree.data = mlc::Unit{};
-        new_tree.children.emplace_back(subtrees[indices[a]]);
-        new_tree.children.emplace_back(subtrees[indices[b]]);
-        new_tree.edges.emplace_back(node.dist);
-        subtrees.emplace_back(new_tree);
-        indices[a] = indices[b] = subtrees.size() - 1;
-        Nnodes++;
     }
-    return subtrees.back();
-}
 
+    return tree;
+}
 
 // upgmaFromDist :: Matrix Real -> RootedTree () Real Int This is a naive cubic
 // time algorithm. Quadratic time algorithms are possible, this implementation
@@ -130,47 +93,83 @@ RootedTree<mlc::Unit, double, int> edge_map_to_tree(std::vector<IndexPair> nodes
 RootedTree<mlc::Unit, double, int> upgmaFromDist(
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mat
 ){
+
+    std::cerr << std::endl;
+    std::cerr << " upgmaFromDist input matrix size: " << mat.rows()
+              << " rows and " << mat.cols() << " columns" << std::endl;
+
     int Nleafs = mat.cols();
     int Nnodes = 0;
-    std::vector<IndexPair> nodes;
+
+    std::vector<std::vector<Edge>> edges(Nleafs * 2 - 1);
+    std::vector<double> sizes(Nleafs * 2 - 1, 0);
+
+    // initialize the indices to the leafs
+    //
+    // as vertices are paired, indices will either be mapped to -1 or mapped to
+    // internal node indices
+    //
+    // matrix indices map into the `indices` vector to find the tree indices
     std::vector<int> indices(Nleafs);
     for(int i = 0; i < indices.size(); i++){
       indices[i] = i;
+      sizes[i] = 1; // the size of each leaf is 1
     }
 
+    // Maximum distance between any two points
+    double globalMax = mat.maxCoeff();
+    std::cerr << "  maxCoeff: " << globalMax << std::endl;
+    std::cerr << "  minCoeff: " << mat.minCoeff() << std::endl;
+
+    int root = -1;
     bool not_done = true;
     int loop_count = 0;
     while(not_done){
-      std::cerr << "loop " << loop_count << std::endl; loop_count++;
-      double min_dist = 0;
+      // std::cerr << "loop " << loop_count << std::endl; loop_count++;
+      not_done = false;
+      double min_dist = globalMax;
       int min_i = 0;
       int min_j = 0;
+
       // Find closest pair of taxa
-      for(int i = 0; i < Nleafs; i++){
-        if(indices[i] < 0){
-          for(int j = 0; j < i; j++){
-            if(indices[j] < 0){
-              not_done = false;
-              double ij_dist = mat(i,j);
-              if(ij_dist > -1 * min_dist){
+      for(int row_id = 0; row_id < Nleafs; row_id++){
+        // if the index was already used, it would have been set to -1, which
+        // means it should be skipped
+        if(indices[row_id] >= 0){
+          for(int col_id = 0; col_id < row_id; col_id++){
+            // likewise for j
+            if(indices[col_id] >= 0){
+              // we've reached a pair of indices that have not been used
+              not_done = true;
+              double ij_dist = mat(row_id, col_id);
+              if(ij_dist < min_dist){
                 min_dist = ij_dist;
-                min_i = i;
-                min_j = j;
+                min_i = row_id;
+                min_j = col_id;
               }
             }
           }
         }
       }
-      if(not_done){
-        indices[min_i] = -1; // this row will no longer be used
-        Nnodes++;
-        indices[min_j] = Nnodes + Nleafs;
 
-        IndexPair newNode;
-        newNode.a = min_i;
-        newNode.b = min_j;
-        newNode.dist = min_dist;
-        nodes.push_back(newNode);
+      if(not_done){
+        Nnodes++;
+        int parent = Nnodes + Nleafs - 1;
+
+        Edge left;
+        left.child = indices[min_i];
+        left.dist = min_dist / 2;
+
+        Edge right;
+        right.child = indices[min_j];
+        right.dist = min_dist / 2;
+
+        edges[parent].push_back(left);
+        edges[parent].push_back(right);
+
+        int ni = sizes[indices[min_i]];
+        int nj = sizes[indices[min_j]];
+        sizes[parent] = ni + nj;
 
         //      j
         //      |
@@ -183,21 +182,37 @@ RootedTree<mlc::Unit, double, int> upgmaFromDist(
         //   6  |*  0             6  +*  0
         //   7  |*   0            7  +*   0
         int new_node = min_j; // to save space, we will reuse the min_j'th col
-        for(int i = 0; i < min_j; i++){
-          if(indices[i] >= 0){
-            mat(new_node,i) = mat(min_j,i) + mat(min_i,i);
+        for(int col_id = 0; col_id < min_j; col_id++){
+          if(indices[col_id] >= 0){
+            mat(new_node,col_id) = (mat(min_j,col_id) * nj + mat(min_i,col_id) * ni) / (nj + ni);
           }
         }
-        for(int i = min_j + 1; i < Nleafs; i++){
-          if(indices[i] >= 0){
-            mat(i,new_node) = mat(i,min_j) + mat(min_i,i);
+        for(int row_id = min_j + 1; row_id < Nleafs; row_id++){
+          if(indices[row_id] >= 0){
+            mat(row_id,new_node) = (mat(row_id,min_j) * nj + mat(min_i,row_id) * ni) / (nj + ni);
           }
         }
+
+        // at the end of the loop this will be the root of the tree
+        root = parent;
+
+        indices[min_j] = parent;
+        indices[min_i] = -1; // this row will no longer be used
       }
     }
-    std::cerr << "loop complete" << std::endl;
 
-    RootedTree<mlc::Unit, double, int> finalTree = edge_map_to_tree(nodes);
+    std::cerr << "  loop complete, nodes size: " << edges.size() << std::endl;
+    for(size_t i = 0; i < edges.size(); i++){
+      std::cerr << i << std::endl;
+      for(size_t j = 0; j < edges[i].size(); j++){
+        std::cerr << "  " << edges[i][j].child << " " << edges[i][j].dist << std::endl;
+      }
+    }
+
+    RootedTree<mlc::Unit, double, int> finalTree = edge_map_to_tree(root, edges);
+
+    std::cerr << "  finalTree n children: " << finalTree.children.size() << std::endl;
+
     return finalTree;
 }
 

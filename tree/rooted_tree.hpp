@@ -16,23 +16,31 @@
 #include "mlccpptypes/bio.hpp"
 
 template <typename Node, typename Edge, typename Leaf>
-int mlc_rooted_count_nodes(RootedTree<Node, Edge, Leaf> tree) {
+int mlc_rooted_count_nodes(const RootedTree<Node, Edge, Leaf> &tree) {
+    
+    // std::cerr << "entering rooted_count_nodes" << std::endl;
+
     int count = 1;
     for (const auto& child : tree.children) {
         if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(child)) {
             count += mlc_rooted_count_nodes(std::get<RootedTree<Node, Edge, Leaf>>(child));
         }
     }
+
+    // std::cerr << "exiting rooted_count_nodes, count=" << count << std::endl;
+
     return count;
 }
 
 template <typename Node, typename Edge, typename Leaf>
-RootedTree<Node, Edge, Leaf> mlc_rooted_pack_tree_r(
+RootedTree<Node, Edge, Leaf>
+mlc_rooted_pack_tree_r(
         size_t node_index,
-        std::vector<Node> nodes,
-        std::vector<Leaf> leafs,
-        std::vector<std::vector<Edge>> edges,
-        std::vector<std::vector<int>> child_indices) {
+        const std::vector<Node> &nodes,
+        const std::vector<Leaf> &leafs,
+        const std::vector<std::vector<Edge>> &edges,
+        const std::vector<std::vector<int>> &child_indices)
+{
     std::vector<std::variant<RootedTree<Node, Edge, Leaf>, Leaf>> children;
 
     for (int child_index : child_indices[node_index]) {
@@ -52,9 +60,10 @@ RootedTree<Node, Edge, Leaf> mlc_rooted_pack_tree_r(
 }
 
 template <typename Node, typename Edge, typename Leaf>
-RootedTree<Node, Edge, Leaf> mlc_rooted_pack_tree(std::tuple<std::vector<Node>,
-                           std::vector<std::tuple<int, int, Edge>>,
-                           std::vector<Leaf>> pack) {
+RootedTree<Node, Edge, Leaf>
+mlc_rooted_pack_tree(
+    const std::tuple<std::vector<Node>, std::vector<std::tuple<int, int, Edge>>,std::vector<Leaf>> &pack)
+{
     const auto& [nodes, edges, leafs] = pack;
 
     // Store the children and edges for every node (these include leaf and node children)
@@ -77,12 +86,23 @@ template <typename Node, typename Edge, typename Leaf>
 std::tuple<std::vector<Node>, std::vector<std::tuple<int, int, Edge>>, std::vector<Leaf>>
 mlc_rooted_unpack_tree(const RootedTree<Node, Edge, Leaf> &tree)
 {
+
+    // std::cerr << "  rooted unpack n children: " << tree.children.size() << std::endl;
+
     std::vector<Node> nodes;
     std::vector<Leaf> leafs;
     std::vector<std::tuple<int, int, Edge>> edges;
 
     int number_of_nodes = mlc_rooted_count_nodes(tree);
+
+    // std::cerr << "  size: " << number_of_nodes << std::endl;
+
     mlc_rooted_unpack_tree_r(tree, nodes, leafs, edges, number_of_nodes, 0);
+
+    // std::cerr << "  nodes: " << nodes.size() << std::endl;
+    // std::cerr << "  edges: " << edges.size() << std::endl;
+    // std::cerr << "  leafs: " << leafs.size() << std::endl;
+
     return {nodes, edges, leafs};
 }
 
@@ -92,15 +112,19 @@ void mlc_rooted_unpack_tree_r(const RootedTree<Node, Edge, Leaf>& tree, std::vec
                        std::vector<Leaf>& leafs, std::vector<std::tuple<int, int, Edge>>& edges, int number_of_nodes, int index)
 {
     nodes.push_back(tree.data);
-    for (const auto& child : tree.children) {
-        if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(child)) {
-            const auto& child_tree = std::get<RootedTree<Node, Edge, Leaf>>(child);
-            edges.push_back(std::make_tuple(index, nodes.size(), child_tree.edges.front()));
+    if (tree.children.size() != tree.edges.size()){
+      // std::cerr << "malformed tree, there are " << tree.children.size() << " children but " << tree.edges.size() << " edges" << std::endl;
+    }
+    for (size_t i = 0; i < tree.children.size(); i++){
+        if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(tree.children[i])) {
+            const auto& child_tree = std::get<RootedTree<Node, Edge, Leaf>>(tree.children[i]);
+            edges.push_back(std::make_tuple(index, nodes.size(), tree.edges[i]));
             mlc_rooted_unpack_tree_r(child_tree, nodes, leafs, edges, number_of_nodes, nodes.size());
         } else {
-            leafs.push_back(std::get<Leaf>(child));
-            edges.push_back(std::make_tuple(index, leafs.size() + number_of_nodes - 1, tree.edges.front()));
+            leafs.push_back(std::get<Leaf>(tree.children[i]));
+            edges.push_back(std::make_tuple(index, leafs.size() + number_of_nodes - 1, tree.edges[i]));
         }
+
     }
 }
 
@@ -181,6 +205,9 @@ RootedTree<Node, Edge, Leaf> mlc_rooted_treeBy(
     std::function<RootedTree<Node, Edge, int>(std::vector<B>)> buildTree,
     std::vector<std::tuple<Leaf, B>> xs
 ) {
+
+    // std::cerr << "  entering treeby, size: " << xs.size() << std::endl;
+
     // Extract the second element of each pair in xs to pass to buildTree.
     std::vector<B> buildTreeArgs;
     for (auto& pair : xs) {
@@ -200,6 +227,8 @@ RootedTree<Node, Edge, Leaf> mlc_rooted_treeBy(
         indexTree
     );
 
+    // std::cerr << "  treeBy n children: " << finalTree.children.size() << std::endl;
+
     return finalTree;
 }
 
@@ -216,7 +245,9 @@ RootedTree<NodePrime, EdgePrime, LeafPrime> mlc_rooted_push(
     std::function<std::tuple<EdgePrime, LeafPrime>(NodePrime, Edge, Leaf)> alterLeaf,
     RootedTree<Node, Edge, Leaf> oldRoot
 ) {
+    // std::cerr << "entering push" << std::endl;
     NodePrime newRootNode = handleRoot(oldRoot.data);
+    // std::cerr << "exiting push" << std::endl;
     return mlc_rooted_push_r(alterChildNode, alterLeaf, newRootNode, oldRoot);
 }
 
@@ -269,28 +300,44 @@ RootedTree<NodePrime, EdgePrime, Leaf> mlc_rooted_pull(
 ) {
     RootedTree<NodePrime, EdgePrime, Leaf> newTree;
 
+    // std::cerr << "a" << std::flush;
+
     std::vector<std::tuple<Edge, NodePrime>> links;
 
     for (std::size_t i = 0; i < initialTree.children.size(); i++){
         auto child = initialTree.children[i];
         auto edge = initialTree.edges[i];
         if (std::holds_alternative<Leaf>(child)) {
+            // std::cerr << "+" << std::flush;
             // It's a leaf. Do not change the leaf, keep it in the new tree.
             // But from the leaf, synthesize a node value that will be
             // used to synthesize parent nodes.
             Leaf oldLeaf = std::get<Leaf>(child);
+            // std::cerr << "+" << std::flush;
             NodePrime synthesizedNode = handleLeaf(oldLeaf);
+            // std::cerr << "+" << std::flush;
             newTree.children.push_back(oldLeaf);
+            // std::cerr << "+" << std::flush;
             links.push_back(std::make_tuple(edge, synthesizedNode));
         }
         else if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(child)) {
+            // std::cerr << "-" << std::flush;
             // It's a tree. Recursively call mlc_rooted_pull on it and add it to newTree.
             RootedTree<Node, Edge, Leaf> oldSubtree = std::get<RootedTree<Node, Edge, Leaf>>(child);
+            // std::cerr << "-" << std::flush;
             RootedTree<NodePrime, EdgePrime, Leaf> newSubtree = mlc_rooted_pull(handleLeaf, updateEdge, updateNode, oldSubtree);
+            // std::cerr << "-" << std::flush;
             newTree.children.push_back(newSubtree);
+            // std::cerr << "-" << std::flush;
             links.push_back(std::make_tuple(edge, newSubtree.data));
         }
+        else {
+            // std::cerr << "This should be unreachable" << std::endl;
+        }
+        // std::cerr << std::endl;
     }
+
+    // std::cerr << "b" << std::endl;
 
     std::vector<std::tuple<EdgePrime, NodePrime>> updatedLinks;
 
@@ -301,9 +348,13 @@ RootedTree<NodePrime, EdgePrime, Leaf> mlc_rooted_pull(
         // add element to [(e', n')] vector
         updatedLinks.push_back(std::make_tuple(newEdge, std::get<1>(link)));
     }
+    
+    // std::cerr << "c" << std::endl;
 
     // synthesize new node from original node and [(e', n')] vector
     newTree.data = updateNode(initialTree.data, updatedLinks);
+
+    // std::cerr << "d" << std::endl;
 
     return newTree;
 }

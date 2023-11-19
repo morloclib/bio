@@ -5,4 +5,5 @@ do
     echo $testdir
     cd $testdir
     make
+    cd ..
 done

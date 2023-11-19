@@ -1,4 +1,4 @@
-module treeTest (foo)
+module treeTest (rcr, rc)
 
 import conventions (Str, Real)
 
@@ -8,5 +8,5 @@ import cppbase (id as asCpp)
 
 import bio.tree (RootedTree, randomTree)
 
-foo = asR . asCpp . randomTree
--- foo = asCpp . randomTree
+rcr = asR . asCpp . randomTree
+rc = asCpp . randomTree

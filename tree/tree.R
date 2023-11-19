@@ -13,7 +13,8 @@ mlc_pack_tree_phylo <- function(x){
     class(tree) <- "phylo"
     tree$edge <- edge_map
     tree$tip.label <- leafs
-    tree$node.label <- nodes
+    # tree$node.label <- nodes
+    tree$Nnode <- as.integer(length(nodes))
     tree$edge.length <- edges
     tree
 }

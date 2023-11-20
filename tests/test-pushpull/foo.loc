@@ -1,0 +1,13 @@
+module foo (sizes)
+
+import conventions (Real, Int)
+
+import bio.tree (push, pullNode, RootedTree)
+import bio.algo (upgmaFromDist as upgma)
+import cppbase (id, fold, addI, const)
+import matrix (Matrix)
+
+sizes :: Matrix Real -> RootedTree Int Real Int
+sizes
+  = push id (\ n1 e n2 -> (e, addI n1 n2)) (\ n e l -> (e, addI n 1))
+  . pullNode (const 1) (fold addI 0) . upgma

@@ -74,12 +74,10 @@ RootedTree<mlc::Unit, double, int> edge_map_to_tree(int root, std::vector<std::v
 
         if(edges[childIndex].size() == 0){
           // child is a leaf
-          // std::cerr << "adding leaf " << childIndex << " to node " << root << std::endl;
           tree.children.push_back(childIndex);
         } else {
           // child is a subtree
           RootedTree<mlc::Unit, double, int> childTree = edge_map_to_tree(childIndex, edges);
-          // std::cerr << "adding node " << childIndex << " to node " << root << std::endl;
           tree.children.push_back(childTree); 
         }
     }
@@ -93,10 +91,6 @@ RootedTree<mlc::Unit, double, int> edge_map_to_tree(int root, std::vector<std::v
 RootedTree<mlc::Unit, double, int> upgmaFromDist(
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mat
 ){
-
-    std::cerr << std::endl;
-    std::cerr << " upgmaFromDist input matrix size: " << mat.rows()
-              << " rows and " << mat.cols() << " columns" << std::endl;
 
     int Nleafs = mat.cols();
     int Nnodes = 0;
@@ -118,14 +112,11 @@ RootedTree<mlc::Unit, double, int> upgmaFromDist(
 
     // Maximum distance between any two points
     double globalMax = mat.maxCoeff();
-    std::cerr << "  maxCoeff: " << globalMax << std::endl;
-    std::cerr << "  minCoeff: " << mat.minCoeff() << std::endl;
 
     int root = -1;
     bool not_done = true;
     int loop_count = 0;
     while(not_done){
-      // std::cerr << "loop " << loop_count << std::endl; loop_count++;
       not_done = false;
       double min_dist = globalMax;
       int min_i = 0;
@@ -201,17 +192,7 @@ RootedTree<mlc::Unit, double, int> upgmaFromDist(
       }
     }
 
-    std::cerr << "  loop complete, nodes size: " << edges.size() << std::endl;
-    for(size_t i = 0; i < edges.size(); i++){
-      std::cerr << i << std::endl;
-      for(size_t j = 0; j < edges[i].size(); j++){
-        std::cerr << "  " << edges[i][j].child << " " << edges[i][j].dist << std::endl;
-      }
-    }
-
     RootedTree<mlc::Unit, double, int> finalTree = edge_map_to_tree(root, edges);
-
-    std::cerr << "  finalTree n children: " << finalTree.children.size() << std::endl;
 
     return finalTree;
 }

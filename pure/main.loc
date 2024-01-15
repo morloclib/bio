@@ -1,9 +1,10 @@
 module bio.pure (*)
 
+import conventions (Str)
+
 source Cpp from "pure.hpp" ("revcom")
 
 revcom :: Str -> Str
-revcom Cpp :: "std::string" -> "std::string"
 
 reverseComplement :: DNA -> DNA
 translate :: DNA -> AA

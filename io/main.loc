@@ -3,10 +3,10 @@ module bio.io (*)
 source Cpp from "fastaIO.hpp" ("readFasta", "writeFasta")
 
 type (Fasta a) = [(a, Str)]
-type Cpp (Fasta a) = [(a, "std::string")]
+type Cpp => (Fasta a) = [(a, "std::string")]
 
 type Filename = Str
-type Cpp Filename = "std::string"
+type Cpp => Filename = "std::string"
 
 -- `readFasta` and `writeFasta` are both IO operations. The `morloc` typesystem
 -- currently has no mechanism to describe this (e.g., no IO monad). I haven't

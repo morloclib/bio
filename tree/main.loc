@@ -6,8 +6,8 @@ import base (snd, map, ne, append)
 
 
 source Cpp from "rooted_tree.hpp"
-  ( "mlc_rooted_pack_tree" as packRootedTree
-  , "mlc_rooted_unpack_tree" as unpackRootedTree
+  ( "mlc_rooted_pack_tree" as packRootedTreeCpp
+  , "mlc_rooted_unpack_tree" as unpackRootedTreeCpp
   , "mlc_rooted_node" as node
   , "mlc_rooted_subtrees" as subtrees
   , "mlc_rooted_childLeafs" as childLeafs
@@ -21,32 +21,29 @@ source Cpp from "rooted_tree.hpp"
   , "mlc_rooted_alterTree" as alterTree
   , "mlc_rooted_mapNode" as mapNode
   , "mlc_rooted_mapEdge" as mapEdge
+  , "mlc_rooted_mapLeaf" as mapLeaf
   )
 
 source R from "tree.R"
-  ( "mlc_pack_tree_phylo" as packRootedTree
-  , "mlc_unpack_tree_phylo" as unpackRootedTree
+  ( "mlc_pack_tree_phylo" as packRootedTreeR
+  , "mlc_unpack_tree_phylo" as unpackRootedTreeR
   )
 
-type R (RootedTree n e l) = "phylo" n e l 
-type Cpp (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l 
+type R => (RootedTree n e l) = "phylo" n e l
+type Cpp => (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l
 
-packRootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> RootedTree n e l 
-unpackRootedTree :: unpack => RootedTree n e l -> ([n], [(Int, Int, e)], [l])
-
-packRootedTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "RootedTree<$1,$2,$3>" n e l  
-unpackRootedTree Cpp :: unpack => "RootedTree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
+packRootedTreeCpp :: pack => ([n], [(Int, Int, e)], [l]) -> RootedTree n e l
+unpackRootedTreeCpp :: unpack => RootedTree n e l -> ([n], [(Int, Int, e)], [l])
 
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
 -- when packing and unpacking indices need to be tweaked. In fact, I should add
 -- a dedicated Index type.
-packRootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
-unpackRootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
+packRootedTreeR :: pack => ([Str], [(Int, Int, Real)], [Str]) -> RootedTree Str Real Str
+unpackRootedTreeR :: unpack => RootedTree Str Real Str -> ([Str], [(Int, Int, Real)], [Str])
 
 source R from "ape.R" ("random_rooted_tree" as randomTree)
 
 randomTree :: Int -> RootedTree Str Real Str
-randomTree R :: "integer" -> "phylo" "character" "numeric" "character"
 
 treeBy :: ([b] -> RootedTree n e Int) -> [(l, b)] -> RootedTree n e l
 
@@ -143,14 +140,14 @@ leafs = foldTree (\l a -> append a l) (\n e a -> a) []
 
 ------- Unrooted Trees --------------------------------------------------------
 
-type R (UnrootedTree n e l) = "phylo" n e l 
-type Cpp (UnrootedTree n e l) = "UnrootedTree<$1,$2,$3>" n e l 
+type R => (UnrootedTree n e l) = "phylo" n e l 
+type Cpp => (UnrootedTree n e l) = "UnrootedTree<$1,$2,$3>" n e l 
 
 source Cpp from "unrooted_tree.hpp"
   (
   -- packers
-    "mlc_pack_utree" as packUnrootedTree
-  , "mlc_unpack_utree" as unpackUnrootedTree
+    "mlc_pack_utree" as packUnrootedTreeCpp
+  , "mlc_unpack_utree" as unpackUnrootedTreeCpp
 
   -- functions in common with rooted trees (these should be in the typeclass)
   , "mlc_unrooted_count_nodes" as countNodesU
@@ -166,29 +163,27 @@ source Cpp from "unrooted_tree.hpp"
   )
 
 source R from "ape.R" ( "random_unrooted_tree" as randomTreeU )
-source R from "tree.R"
-  ( "mlc_pack_tree_phylo" as packUnrootedTree
-  , "mlc_unpack_tree_phylo" as unpackUnrootedTree
-  )
-
-packUnrootedTree :: pack => ([n], [(Int, Int, e)], [l]) -> UnrootedTree n e l 
-unpackUnrootedTree :: unpack => UnrootedTree n e l -> ([n], [(Int, Int, e)], [l])
-
-packUnrootedTree Cpp   :: pack   => ([n], [("int", "int", e)], [l]) -> "UnrootedTree<$1,$2,$3>" n e l  
-unpackUnrootedTree Cpp :: unpack => "UnrootedTree<$1,$2,$3>" n e l -> ([n], [("int", "int", e)], [l])
-
-packUnrootedTree R   :: pack   => (["character"], [("integer", "integer", "numeric")], ["character"]) -> "phylo" "character" "numeric" "character"
-unpackUnrootedTree R :: unpack => "phylo" "character" "numeric" "character" -> (["character"], [("integer", "integer", "numeric")], ["character"])
 
 randomTreeU :: Int -> UnrootedTree Str Real Str
-randomTreeU R :: "integer" -> "phylo" "character" "numeric" "character"
 
 countNodesU :: UnrootedTree n e l -> Int
 countLeafsU :: UnrootedTree n e l -> Int
 countEdgesU :: UnrootedTree n e l -> Int
-mapNodeU :: (n -> n') -> UnrootedTree n e l -> UnrootedTree n' e l 
-mapEdgeU :: (e -> e') -> UnrootedTree n e l -> UnrootedTree n e' l 
+mapNodeU :: (n -> n') -> UnrootedTree n e l -> UnrootedTree n' e l
+mapEdgeU :: (e -> e') -> UnrootedTree n e l -> UnrootedTree n e' l
 mapLeafU :: (l -> l') -> UnrootedTree n e l -> UnrootedTree n e l'
 treeByU :: ([b] -> UnrootedTree n e Int) -> [(l, b)] -> UnrootedTree n e l
 
 rootAtMidpoint :: UnrootedTree n Real l -> RootedTree n Real l
+
+
+source R from "tree.R"
+  ( "mlc_pack_tree_phylo" as packUnrootedTreeR
+  , "mlc_unpack_tree_phylo" as unpackUnrootedTreeR
+  )
+
+packUnrootedTreeCpp :: pack => ([n], [(Int, Int, e)], [l]) -> UnrootedTree n e l 
+unpackUnrootedTreeCpp :: unpack => UnrootedTree n e l -> ([n], [(Int, Int, e)], [l])
+
+packUnrootedTreeR :: pack => ([Str], [(Int, Int, Real)], [Str]) -> UnrootedTree Str Real Str
+unpackUnrootedTreeR :: unpack => UnrootedTree Str Real Str -> ([Str], [(Int, Int, Real)], [Str])

@@ -15,21 +15,11 @@ record EntrezSearchConfig = EntrezSearchConfig
   , maxdate :: Str
   , retmax :: Int 
   }
-
-record Py EntrezSearchConfig = "dict"
-  { email :: "str"
-  , db :: "str"  
-  , mindate :: "str"
-  , maxdate :: "str"
-  , retmax :: "int"
-  }
+record Py => EntrezSearchConfig = "dict"
 
 searchEntrez :: EntrezSearchConfig -> Str -> [Str]
 
-record EntrezFetchConfig = EntrezFetchConfig
-  { email :: Str }
-
-record Py EntrezFetchConfig = "dict"
-  { email :: "str" }
+record EntrezFetchConfig = EntrezFetchConfig { email :: Str }
+record Py => EntrezFetchConfig = "dict"
 
 nucleotideAccessionToJson :: EntrezFetchConfig -> [Str] -> [JsonObj] 

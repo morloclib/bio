@@ -6,9 +6,7 @@ import base (snd, map, ne, append)
 
 
 source Cpp from "rooted_tree.hpp"
-  ( "mlc_rooted_pack_tree" as packRootedTreeCpp
-  , "mlc_rooted_unpack_tree" as unpackRootedTreeCpp
-  , "mlc_rooted_node" as node
+  ( "mlc_rooted_node" as node
   , "mlc_rooted_subtrees" as subtrees
   , "mlc_rooted_childLeafs" as childLeafs
   , "mlc_rooted_edgeMap" as edgeMap
@@ -24,22 +22,25 @@ source Cpp from "rooted_tree.hpp"
   , "mlc_rooted_mapLeaf" as mapLeaf
   )
 
-source R from "tree.R"
-  ( "mlc_pack_tree_phylo" as packRootedTreeR
-  , "mlc_unpack_tree_phylo" as unpackRootedTreeR
-  )
-
 type R => (RootedTree n e l) = "phylo" n e l
 type Cpp => (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l
 
-packRootedTreeCpp :: pack => ([n], [(Int, Int, e)], [l]) -> RootedTree n e l
-unpackRootedTreeCpp :: unpack => RootedTree n e l -> ([n], [(Int, Int, e)], [l])
+instance Packable ([n], [(Int, Int, e)], [l]) (RootedTree n e l) where
+  source Cpp from "rooted_tree.hpp"
+    ( "mlc_rooted_pack_tree" as pack
+    , "mlc_rooted_unpack_tree" as unpack
+    )
+
 
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
 -- when packing and unpacking indices need to be tweaked. In fact, I should add
 -- a dedicated Index type.
-packRootedTreeR :: pack => ([Str], [(Int, Int, Real)], [Str]) -> RootedTree Str Real Str
-unpackRootedTreeR :: unpack => RootedTree Str Real Str -> ([Str], [(Int, Int, Real)], [Str])
+instance Packable ([Str], [(Int, Int, Real)], [Str]) (RootedTree Str Real Str) where
+  source R from "tree.R"
+    ( "mlc_pack_tree_phylo" as pack
+    , "mlc_unpack_tree_phylo" as unpack
+    )
+
 
 source R from "ape.R" ("random_rooted_tree" as randomTree)
 
@@ -145,12 +146,8 @@ type Cpp => (UnrootedTree n e l) = "UnrootedTree<$1,$2,$3>" n e l
 
 source Cpp from "unrooted_tree.hpp"
   (
-  -- packers
-    "mlc_pack_utree" as packUnrootedTreeCpp
-  , "mlc_unpack_utree" as unpackUnrootedTreeCpp
-
   -- functions in common with rooted trees (these should be in the typeclass)
-  , "mlc_unrooted_count_nodes" as countNodesU
+    "mlc_unrooted_count_nodes" as countNodesU
   , "mlc_unrooted_count_leafs" as countLeafsU
   , "mlc_unrooted_count_edges" as countEdgesU
   , "mlc_unrooted_mapNode" as mapNodeU
@@ -176,14 +173,14 @@ treeByU :: ([b] -> UnrootedTree n e Int) -> [(l, b)] -> UnrootedTree n e l
 
 rootAtMidpoint :: UnrootedTree n Real l -> RootedTree n Real l
 
+instance Packable ([n], [(Int, Int, e)], [l]) (UnrootedTree n e l) where
+  source Cpp from "unrooted_tree.hpp"
+    ( "mlc_pack_utree" as pack
+    , "mlc_unpack_utree" as unpack
+    )
 
-source R from "tree.R"
-  ( "mlc_pack_tree_phylo" as packUnrootedTreeR
-  , "mlc_unpack_tree_phylo" as unpackUnrootedTreeR
-  )
-
-packUnrootedTreeCpp :: pack => ([n], [(Int, Int, e)], [l]) -> UnrootedTree n e l 
-unpackUnrootedTreeCpp :: unpack => UnrootedTree n e l -> ([n], [(Int, Int, e)], [l])
-
-packUnrootedTreeR :: pack => ([Str], [(Int, Int, Real)], [Str]) -> UnrootedTree Str Real Str
-unpackUnrootedTreeR :: unpack => UnrootedTree Str Real Str -> ([Str], [(Int, Int, Real)], [Str])
+instance Packable ([Str], [(Int, Int, Real)], [Str]) (UnrootedTree Str Real Str) where
+  source R from "tree.R"
+    ( "mlc_pack_tree_phylo" as pack
+    , "mlc_unpack_tree_phylo" as unpack
+    )

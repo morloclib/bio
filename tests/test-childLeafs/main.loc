@@ -1,6 +1,6 @@
 module m (foo)
 
-import conventions (Str, Int, Tuple2, List, Real)
+import types (Str, Int, Tuple2, List, Real)
 
 import bio.tree (childLeafs, randomTree, RootedTree)
 

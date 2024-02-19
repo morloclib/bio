@@ -1,6 +1,6 @@
 module treeTest (rcr, rc)
 
-import conventions (Str, Real)
+import types (Str, Real)
 
 -- functions for language conversion
 import rbase (id as asR)

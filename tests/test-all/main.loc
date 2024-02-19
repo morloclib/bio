@@ -1,6 +1,6 @@
 module testAll (foo)
 
-import conventions (Int, Real, Str, List, Tuple3, Tuple2)
+import types (Int, Real, Str, List, Tuple3, Tuple2)
 import bio.tree(RootedTree, randomTree, nodes)
 
 foo = nodes . randomTree

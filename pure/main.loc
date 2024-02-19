@@ -1,6 +1,6 @@
 module bio.pure (*)
 
-import conventions (Str)
+import types (Str)
 
 source Cpp from "pure.hpp" ("revcom")
 

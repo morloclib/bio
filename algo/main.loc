@@ -1,7 +1,7 @@
 module bio.algo (*)
 
-import conventions (Str, Real, Int, List, Unit, Map)
-import base (map, Map)
+import types (Str, Real, Int, List, Unit, Map)
+import base (map)
 import matrix (Matrix, selfcmp)
 
 import bio.tree (RootedTree)

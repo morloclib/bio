@@ -1,6 +1,6 @@
 module foo (sizes)
 
-import conventions (Real, Int)
+import types (Real, Int)
 
 import bio.tree (push, pullNode, RootedTree)
 import bio.algo (upgmaFromDist as upgma)

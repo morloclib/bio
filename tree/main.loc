@@ -1,7 +1,7 @@
 module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
-import conventions (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
+import types (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
 import base (snd, map, ne, append)
 
 

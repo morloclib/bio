@@ -1,13 +1,12 @@
-import sys
-
-
 def mlc_search_entrez(config, query):
     """
     example:
         config = dict(db="nuccore", retmax=20, mindate="2021/01/01", maxdate="2021/12/31")
         query = "Influenza+A+Virus[Organism]+H5N1"
-        result = search_entrez_mlc(config, query)
+        result = mlc_search_entrez(config, query)
     """
+    # The import is placed inside the function to avoid loading the module when
+    # this 
     import requests
     base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
@@ -30,10 +29,11 @@ def mlc_search_entrez(config, query):
 
 def mlc_nucleotide_accession_to_json(config, gb_ids):
     """
-    Lookup XML metadata for a list of ids in entrez.
+    Lookup json metadata for a list of ids in entrez.
     """
     from Bio import Entrez 
     import time
+    import sys
 
     Entrez.email = config["email"]
 

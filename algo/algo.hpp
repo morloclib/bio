@@ -10,7 +10,7 @@
 using namespace std;
 
 // countKmers :: k:Int -> s:Str -> Map Str Int
-std::map<std::string,int> countKmers(int k, std::string seq){
+std::map<std::string,int> countKmers(int k, const std::string& seq){
     std::map<std::string,int> kmers;
    
     if(k <= 0){
@@ -32,7 +32,7 @@ std::map<std::string,int> countKmers(int k, std::string seq){
 // kmerDistance :: Map Str Int -> Map Str Int -> Real
 //
 // distance = sqrt(sum( (x_i - y_i)^2 / (x_i + y_i) ))
-double kmerDistance(const std::map<std::string,int>& x, std::map<std::string,int> y){
+double kmerDistance(const std::map<std::string,int>& x, const std::map<std::string,int>& y){
     double square_distance = 0.0;
 
     // Iterate through kmers in sequence x, find distance to y
@@ -41,7 +41,7 @@ double kmerDistance(const std::map<std::string,int>& x, std::map<std::string,int
         int xcount = pair.second;
         int ycount = 0; 
         if(y.find(key) != y.end()){
-            ycount = y[key]; 
+            ycount = y.at(key); 
         }
         square_distance += (xcount - ycount) * (xcount - ycount) / (xcount + ycount);
     }

@@ -16,7 +16,8 @@
 #include "mlccpptypes/bio.hpp"
 
 template <typename Node, typename Edge, typename Leaf>
-int mlc_rooted_count_nodes(const RootedTree<Node, Edge, Leaf> &tree) {
+int mlc_rooted_count_nodes(const RootedTree<Node, Edge, Leaf> &tree)
+{
     
     // std::cerr << "entering rooted_count_nodes" << std::endl;
 
@@ -165,7 +166,7 @@ std::vector<std::tuple<Edge, Leaf>> mlc_rooted_childLeafs(RootedTree<Node, Edge,
 }
 
 template <typename Node, typename Edge, typename Leaf, typename NewLeaf>
-RootedTree<Node, Edge, NewLeaf> mlc_rooted_mapLeaf(
+RootedTree<Node, Edge, NewLeaf> _mapLeaf(
     std::function<NewLeaf(Leaf)> func, 
     RootedTree<Node, Edge, Leaf> tree
 ) {
@@ -183,7 +184,7 @@ RootedTree<Node, Edge, NewLeaf> mlc_rooted_mapLeaf(
         else if (std::holds_alternative<RootedTree<Node, Edge, Leaf>>(child)) {
             // It's a tree. Recursively call mapLeafs on it and add it to newRootedTree.
             const RootedTree<Node, Edge, Leaf>& oldSubtree = std::get<RootedTree<Node, Edge, Leaf>>(child);
-            RootedTree<Node, Edge, NewLeaf> newSubtree = mlc_rooted_mapLeaf(func, oldSubtree);
+            RootedTree<Node, Edge, NewLeaf> newSubtree = _mapLeaf(func, oldSubtree);
             newRootedTree.children.push_back(newSubtree);
         }
     }
@@ -218,7 +219,7 @@ RootedTree<Node, Edge, Leaf> mlc_rooted_treeBy(
     RootedTree<Node, Edge, int> indexTree = buildTree(buildTreeArgs);
 
     // Replace indices with their corresponding leafs
-    RootedTree<Node, Edge, Leaf> finalTree = mlc_rooted_mapLeaf(
+    RootedTree<Node, Edge, Leaf> finalTree = _mapLeaf(
         static_cast<std::function<Leaf(int)>>(
             [&](int index) {
                return std::get<0>(xs[index]);
@@ -291,7 +292,7 @@ RootedTree<NodePrime, EdgePrime, LeafPrime> mlc_rooted_push_r(
 //      -> (n -> [(e', n')] -> n')
 //      -> RootedTree n e l
 //      -> RootedTree n' e' l
-template<typename Leaf, typename NodePrime, typename Node, typename Edge, typename EdgePrime>
+template<typename Node, typename Edge, typename Leaf, typename NodePrime, typename EdgePrime>
 RootedTree<NodePrime, EdgePrime, Leaf> mlc_rooted_pull(
     std::function<NodePrime(Leaf)> handleLeaf,
     std::function<EdgePrime(Node, Edge, NodePrime)> updateEdge,

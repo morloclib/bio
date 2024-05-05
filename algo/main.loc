@@ -10,7 +10,7 @@ import bio.pure
 source Cpp from "algo.hpp" ("countKmers", "kmerDistance", "upgmaFromDist")
 
 -- count all substrings of length k in string s
-countKmers :: k:Int -> s:Str -> Map Str Int
+countKmers :: Int -> Str -> Map Str Int
 
 -- based on k-mer counts derived for two different sequences, generate a single
 -- distance estimate
@@ -20,16 +20,19 @@ kmerDistance :: Map Str Int -> Map Str Int -> Real
 -- and leafs that are indices into the original sequence list.
 upgmaFromDist :: Matrix Real -> RootedTree () Real Int
 
--- Create a kmer distance tree using k-mers of length k  
-kmerdist :: Int -> [Str] -> Matrix Real
-kmerdist k = selfcmp kmerDistance . map (countKmers k)
+-- Create a kmer distance tree using k-mers of length k
+makeDist :: Int -> [Str] -> Matrix Real
+makeDist k = selfcmp kmerDistance . map (countKmers k)
 
 -- Build a UPGMA tree from unaligned sequences using a k-mer distance metric.
 -- I am currently hard-coding the k-mer size. Eventually, I need a means of 
 -- determining an optimal value for this from the input data.
 upgma :: [Str] -> RootedTree () Real Int
-upgma = upgmaFromDist . kmerdist 8
+upgma = upgmaFromDist . makeDist 8
 
 -- treealign :: RootedTree () Real Int -> [Str] -> [Str]
 -- njBase :: Matrix Real -> RootedTree () Real Int
 -- pairwiseAlignment :: (a -> a -> Int) -> a -> [a] -> [a] -> ([a], [a])
+
+-- class PhylogeneticTreeBuilder seq (tree node edge leaf) where
+--   treeBy :: [(leaf, seq)] -> ([seq] -> tree node edge Int) -> tree node edge leaf

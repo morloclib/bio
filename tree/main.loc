@@ -2,25 +2,7 @@ module bio.tree (*)
 
 -- This type alias importing is getting a bit ludicrous
 import types (Int, Bool, Str, Real, Tuple2, Tuple3, List, Map, Unit)
-import base (snd, map, ne, append)
-
-
-source Cpp from "rooted_tree.hpp"
-  ( "mlc_rooted_node" as node
-  , "mlc_rooted_subtrees" as subtrees
-  , "mlc_rooted_childLeafs" as childLeafs
-  , "mlc_rooted_edgeMap" as edgeMap
-  , "mlc_rooted_push" as push
-  , "mlc_rooted_push_val" as pushVal
-  , "mlc_rooted_pull" as pull
-  , "mlc_rooted_pull_val" as pullVal
-  , "mlc_rooted_treeBy" as treeBy
-  , "mlc_rooted_foldTree" as foldTree
-  , "mlc_rooted_alterTree" as alterTree
-  , "mlc_rooted_mapNode" as mapNode
-  , "mlc_rooted_mapEdge" as mapEdge
-  , "mlc_rooted_mapLeaf" as mapLeaf
-  )
+import base (map, at, fst, snd, ne, append)
 
 type R => (RootedTree n e l) = "phylo" n e l
 type Cpp => (RootedTree n e l) = "RootedTree<$1,$2,$3>" n e l
@@ -31,10 +13,9 @@ instance Packable ([n], [(Int, Int, e)], [l]) (RootedTree n e l) where
     , "mlc_rooted_unpack_tree" as unpack
     )
 
-
 -- A few tricky points, R is 1-based, but morloc is 0-based. This means that
--- when packing and unpacking indices need to be tweaked. In fact, I should add
--- a dedicated Index type.
+-- when packing and unpacking indices need to be tweaked. I should add a
+-- dedicated Index type.
 instance Packable ([Str], [(Int, Int, Real)], [Str]) (RootedTree Str Real Str) where
   source R from "tree.R"
     ( "mlc_pack_tree_phylo" as pack
@@ -42,77 +23,102 @@ instance Packable ([Str], [(Int, Int, Real)], [Str]) (RootedTree Str Real Str) w
     )
 
 
+------- C++ Source ------------------------------------------------------------
+
+source Cpp from "rooted_tree.hpp"
+  ( "mlc_rooted_node" as node
+  , "mlc_rooted_subtrees" as subtrees
+  , "mlc_rooted_childLeafs" as childLeafs
+  , "mlc_rooted_push" as push
+  , "mlc_rooted_pull" as pull
+  , "mlc_rooted_foldTree" as foldTree
+  )
+
+node n e l :: RootedTree n e l -> n
+
+subtrees n e l :: RootedTree n e l -> [(e, RootedTree n e l)]
+
+childLeafs n e l :: RootedTree n e l -> [(e, l)]
+
+push n e l n' e' l'
+  :: (n -> n')
+  -> (n' -> e -> n -> (e', n'))
+  -> (n' -> e -> l -> (e', l'))
+  -> RootedTree n e l
+  -> RootedTree n' e' l'
+
+pull n e l n' e'
+  :: (l -> n')
+  -> (n -> e -> n' -> e')
+  -> (n -> [(e', n')] -> n')
+  -> RootedTree n e l
+  -> RootedTree n' e' l
+
+-- general function for pulling values from tip to root
+foldTree n e l a
+  :: (l -> a -> a)
+  -> (n -> e -> a -> a)
+  -> a
+  -> RootedTree n e l
+  -> a
+
+
+
+------- R source --------------------------------------------------------------
+
 source R from "ape.R" ("random_rooted_tree" as randomTree)
 
 randomTree :: Int -> RootedTree Str Real Str
 
-treeBy :: ([b] -> RootedTree n e Int) -> [(l, b)] -> RootedTree n e l
-
-------- Atom Operations --------------------------------------------------------
-
-node :: RootedTree n e l -> n
-subtrees :: RootedTree n e l -> [(e, RootedTree n e l)]
-childLeafs :: RootedTree n e l -> [(e, l)]
-
-edgeMap :: RootedTree n e l -> Map Int (Int, e)
-
-root :: RootedTree n e l -> Int
-root = head . filter ne . enumerate . sort . fst . values . edgeMap
 
 
 ------- Pull Operations -------------------------------------------------------
 
--- general function for pulling values from tip to root
-pullVal :: (l -> (a, n'))
-        -> (n -> e -> a -> n' -> e')
-        -> (n -> [(e', n', a)] -> (a, n'))
-        -> RootedTree n e l
-        -> RootedTree n' e' l
-
-pull :: (l -> n')
-     -> (n -> e -> n' -> e')
-     -> (n -> [(e', n')] -> n')
-     -> RootedTree n e l
-     -> RootedTree n' e' l
+-- TODO: bring this back
+-- -- general function for pulling values from tip to root
+-- pullVal
+--   :: forall n e l n' e' a
+--   .  (l -> (a, n'))
+--   -> (n -> e -> a -> n' -> e')
+--   -> (n -> [(e', n', a)] -> (a, n'))
+--   -> RootedTree n e l
+--   -> RootedTree n' e' l
 
 -- pull values from leaf to root
-pullNode :: (l -> n') -> ([n'] -> n') -> RootedTree n e l -> RootedTree n' e l
+pullNode n e l n'
+  :: (l -> n')
+  -> ([n'] -> n')
+  -> RootedTree n e l
+  -> RootedTree n' e l
 pullNode f g = pull
     (\l -> f l) -- generate n' using f
     (\n e n' -> e) -- do not change the edge
     (\n es -> g (map snd es)) -- create new node from child nodes, ignore the current node value
 
-------- Push Operations -------------------------------------------------------
+-- TODO: bring this back
+-- -- push a value down a tree, changing the node, edge and leaf types, but preserving topology
+-- pushVal :: (a -> n -> n')
+--         -> (a -> n' -> e -> n -> (e', n'))
+--         -> (a -> n' -> e -> l -> (e', l'))
+--         -> (RootedTree n e l -> a -> a)
+--         -> a
+--         -> RootedTree n e l
+--         -> RootedTree n' e' l'
 
--- push a value down a tree, changing the node, edge and leaf types, but preserving topology
-pushVal :: (a -> n -> n')
-        -> (a -> n' -> e -> n -> (e', n'))
-        -> (a -> n' -> e -> l -> (e', l'))
-        -> (RootedTree n e l -> a -> a)
-        -> a
-        -> RootedTree n e l
-        -> RootedTree n' e' l'
-
-push :: (n -> n')
-     -> (n' -> e -> n -> (e', n'))
-     -> (n' -> e -> l -> (e', l'))
-     -> RootedTree n e l
-     -> RootedTree n' e' l'
-
-mapNode :: (n -> n') -> RootedTree n e l -> RootedTree n' e l
+mapNode n e l n' :: (n -> n') -> RootedTree n e l -> RootedTree n' e l
 mapNode f
     = push
       (\ n -> f n) -- at the root, ignore the accululator, after the node with the given function `f`
       (\ n' e n -> (e, f n)) -- at each internal node, ignore the accumulator and context and alter the node with `f`
       (\ n' e l -> (e, l)) -- do not change the leaf values
 
-mapEdge :: (e -> e') -> RootedTree n e l -> RootedTree n e' l
+mapEdge n e l e' :: (e -> e') -> RootedTree n e l -> RootedTree n e' l
 mapEdge f = push (\ n -> n) (\ n' e n -> (f e, n)) (\ n' e l -> (f e, l))
 
-mapLeaf :: (l -> l') -> RootedTree n e l -> RootedTree n e l'
+mapLeaf n e l l' :: (l -> l') -> RootedTree n e l -> RootedTree n e l'
 mapLeaf f = push (\ n -> n) (\ n' e n -> (e, n)) (\ n' e l -> (e, f l))
 
-mapChildWithParent :: (n -> n') -> (n' -> n -> n') -> RootedTree n e l -> RootedTree n' e l
+mapChildWithParent n e l n' :: (n -> n') -> (n' -> n -> n') -> RootedTree n e l -> RootedTree n' e l
 mapChildWithParent f g
     = push
       (\ n -> f n)
@@ -122,21 +128,31 @@ mapChildWithParent f g
 
 ------- Fold Operations -------------------------------------------------------
 
--- general function for pulling values from tip to root
-foldTree :: (l -> a -> a)
-         -> (n -> e -> a -> a)
-         -> a
-         -> RootedTree n e l
-         -> a
-
-nodes :: RootedTree n e l -> [n]
+nodes n e l :: RootedTree n e l -> [n]
 nodes = foldTree (\l a -> a) (\n e a -> append a n) []
 
-edges :: RootedTree n e l -> [e]
+edges n e l :: RootedTree n e l -> [e]
 edges = foldTree (\l a -> a) (\n e a -> append a e) []
 
-leafs :: RootedTree n e l -> [l] -- yes, that is how I pluralize leaf
+leafs n e l :: RootedTree n e l -> [l] -- yes, that is how I pluralize leaf
 leafs = foldTree (\l a -> append a l) (\n e a -> a) []
+
+
+------- Other Operations -------------------------------------------------------
+
+source Cpp from "rooted_tree.hpp" ("mlc_rooted_treeBy" as treeBy)
+
+treeBy n e l b
+  :: ([b] -> RootedTree n e Int) -> [(l, b)] -> RootedTree n e l
+
+-- -- This implementation is correct but has terrible performance since it 
+-- -- re-evaluates `map fst xs` before every index lookup by `at`
+-- treeBy treebuilder xs =
+--   mapLeaf (at labels) (treebuilder sequences)
+--   where
+--     labels = map fst xs
+--     sequences = map snd xs
+
 
 
 ------- Unrooted Trees --------------------------------------------------------
@@ -163,15 +179,15 @@ source R from "ape.R" ( "random_unrooted_tree" as randomTreeU )
 
 randomTreeU :: Int -> UnrootedTree Str Real Str
 
-countNodesU :: UnrootedTree n e l -> Int
-countLeafsU :: UnrootedTree n e l -> Int
-countEdgesU :: UnrootedTree n e l -> Int
-mapNodeU :: (n -> n') -> UnrootedTree n e l -> UnrootedTree n' e l
-mapEdgeU :: (e -> e') -> UnrootedTree n e l -> UnrootedTree n e' l
-mapLeafU :: (l -> l') -> UnrootedTree n e l -> UnrootedTree n e l'
-treeByU :: ([b] -> UnrootedTree n e Int) -> [(l, b)] -> UnrootedTree n e l
+countNodesU n e l :: UnrootedTree n e l -> Int
+countLeafsU n e l :: UnrootedTree n e l -> Int
+countEdgesU n e l :: UnrootedTree n e l -> Int
+mapNodeU n e l n' :: (n -> n') -> UnrootedTree n e l -> UnrootedTree n' e l
+mapEdgeU n e l e' :: (e -> e') -> UnrootedTree n e l -> UnrootedTree n e' l
+mapLeafU n e l l' :: (l -> l') -> UnrootedTree n e l -> UnrootedTree n e l'
+treeByU n e l b :: ([b] -> UnrootedTree n e Int) -> [(l, b)] -> UnrootedTree n e l
 
-rootAtMidpoint :: UnrootedTree n Real l -> RootedTree n Real l
+rootAtMidpoint n l :: UnrootedTree n Real l -> RootedTree n Real l
 
 instance Packable ([n], [(Int, Int, e)], [l]) (UnrootedTree n e l) where
   source Cpp from "unrooted_tree.hpp"

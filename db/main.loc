@@ -8,11 +8,12 @@ source Python from "entrez.py"
   , "mlc_nucleotide_accession_to_json" as nucleotideAccessionToJson
   )
 
+type Date = Str
 record EntrezSearchConfig = EntrezSearchConfig
   { email :: Str
   , db :: Str  
-  , mindate :: Str
-  , maxdate :: Str
+  , mindate :: Date
+  , maxdate :: Date
   , retmax :: Int 
   }
 record Py => EntrezSearchConfig = "dict"
